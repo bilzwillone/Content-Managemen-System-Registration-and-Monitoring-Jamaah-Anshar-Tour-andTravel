@@ -234,18 +234,19 @@
                                         @endif
 
                                         <a
-                                            href="/kontak"
+                                            href="{{ route('packages.show', $package->slug) }}"
                                             class="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-amber-400 px-5 py-3 text-sm font-bold text-gray-900 transition hover:bg-amber-500"
                                         >
-                                            Konsultasi Paket
+                                            Lihat Detail Paket
 
                                             <svg xmlns="http://www.w3.org/2000/svg"
-                                                 width="17" height="17"
-                                                 viewBox="0 0 24 24"
-                                                 fill="none" stroke="currentColor"
-                                                 stroke-width="2"
-                                                 stroke-linecap="round"
-                                                 stroke-linejoin="round">
+                                                width="17" height="17"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="2"
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round">
                                                 <path d="M5 12h14M12 5l7 7-7 7"/>
                                             </svg>
                                         </a>
