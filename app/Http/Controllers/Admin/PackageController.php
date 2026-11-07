@@ -34,6 +34,20 @@ class PackageController extends Controller
         return $slug;
     }
 
+    /**
+     * Menyiapkan data fasilitas.
+     */
+    private function prepareFacilities(?array $facilities): array
+    {
+        return array_values(array_filter(
+            $facilities ?? [],
+            fn ($facility) => filled($facility)
+        ));
+    }
+
+    /**
+     * Menampilkan daftar paket.
+     */
     public function index()
     {
         $packages = Package::latest()->paginate(10);
@@ -41,28 +55,49 @@ class PackageController extends Controller
         return view('admin.packages.index', compact('packages'));
     }
 
+    /**
+     * Menampilkan form tambah paket.
+     */
     public function create()
     {
         return view('admin.packages.create');
     }
 
+    /**
+     * Menyimpan paket baru.
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+
+            'facilities' => ['nullable', 'array'],
+            'facilities.*' => ['nullable', 'string', 'max:255'],
+
             'price' => ['nullable', 'numeric', 'min:0'],
             'duration_days' => ['nullable', 'integer', 'min:1'],
             'departure_date' => ['nullable', 'date'],
+
             'airline' => ['nullable', 'string', 'max:255'],
             'hotel' => ['nullable', 'string', 'max:255'],
+            'hotel_makkah' => ['nullable', 'string', 'max:255'],
+            'hotel_madinah' => ['nullable', 'string', 'max:255'],
+            'flight_note' => ['nullable', 'string'],
+
             'image' => ['nullable', 'image', 'max:2048'],
+
             'is_featured' => ['nullable', 'boolean'],
             'is_visible' => ['nullable', 'boolean'],
+
             'status' => ['required', Rule::in(['draft', 'published'])],
         ]);
 
         $validated['slug'] = $this->generateUniqueSlug($validated['name']);
+
+        $validated['facilities'] = $this->prepareFacilities(
+            $validated['facilities'] ?? []
+        );
 
         $validated['is_featured'] = $request->boolean('is_featured');
         $validated['is_visible'] = $request->boolean('is_visible');
@@ -81,30 +116,51 @@ class PackageController extends Controller
             ->with('success', 'Paket umroh berhasil ditambahkan.');
     }
 
+    /**
+     * Menampilkan form edit paket.
+     */
     public function edit(Package $package)
     {
         return view('admin.packages.edit', compact('package'));
     }
 
+    /**
+     * Memperbarui paket.
+     */
     public function update(Request $request, Package $package)
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+
+            'facilities' => ['nullable', 'array'],
+            'facilities.*' => ['nullable', 'string', 'max:255'],
+
             'price' => ['nullable', 'numeric', 'min:0'],
             'duration_days' => ['nullable', 'integer', 'min:1'],
             'departure_date' => ['nullable', 'date'],
+
             'airline' => ['nullable', 'string', 'max:255'],
             'hotel' => ['nullable', 'string', 'max:255'],
+            'hotel_makkah' => ['nullable', 'string', 'max:255'],
+            'hotel_madinah' => ['nullable', 'string', 'max:255'],
+            'flight_note' => ['nullable', 'string'],
+
             'image' => ['nullable', 'image', 'max:2048'],
+
             'is_featured' => ['nullable', 'boolean'],
             'is_visible' => ['nullable', 'boolean'],
+
             'status' => ['required', Rule::in(['draft', 'published'])],
         ]);
 
         $validated['slug'] = $this->generateUniqueSlug(
             $validated['name'],
             $package->id
+        );
+
+        $validated['facilities'] = $this->prepareFacilities(
+            $validated['facilities'] ?? []
         );
 
         $validated['is_featured'] = $request->boolean('is_featured');
@@ -128,6 +184,9 @@ class PackageController extends Controller
             ->with('success', 'Paket umroh berhasil diperbarui.');
     }
 
+    /**
+     * Menghapus paket.
+     */
     public function destroy(Package $package)
     {
         if ($package->image_path) {

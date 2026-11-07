@@ -365,6 +365,86 @@
 
 </div>
 
+<div>
+    <label class="mb-2 block text-sm font-medium text-gray-700">
+        Fasilitas yang Termasuk
+    </label>
+
+    <p class="mb-3 text-xs text-gray-500">
+        Isi satu fasilitas pada setiap kolom. Kolom yang tidak digunakan boleh dikosongkan.
+    </p>
+
+    <div class="space-y-3">
+        @php
+            $facilityInputs = old('facilities', []);
+            $facilityInputs = array_pad($facilityInputs, 6, '');
+        @endphp
+
+        @foreach ($facilityInputs as $index => $facility)
+            <input
+                type="text"
+                name="facilities[]"
+                value="{{ $facility }}"
+                placeholder="Contoh: Tiket pesawat PP"
+                class="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100"
+            >
+        @endforeach
+    </div>
+</div>
+
+<div class="border-t border-gray-100 pt-5">
+    <h3 class="mb-4 font-semibold text-gray-800">
+        Akomodasi dan Penerbangan
+    </h3>
+
+    <div class="space-y-4">
+        <div>
+            <label for="hotel_makkah" class="mb-2 block text-sm font-medium text-gray-700">
+                Hotel Makkah
+            </label>
+
+            <input
+                type="text"
+                name="hotel_makkah"
+                id="hotel_makkah"
+                value="{{ old('hotel_makkah') }}"
+                placeholder="Contoh: Maysan Al Mashaeer / Setaraf"
+                class="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100"
+            >
+        </div>
+
+        <div>
+            <label for="hotel_madinah" class="mb-2 block text-sm font-medium text-gray-700">
+                Hotel Madinah
+            </label>
+
+            <input
+                type="text"
+                name="hotel_madinah"
+                id="hotel_madinah"
+                value="{{ old('hotel_madinah') }}"
+                placeholder="Contoh: Arkan Al Manar / Setaraf"
+                class="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100"
+            >
+        </div>
+
+        <div>
+            <label for="flight_note" class="mb-2 block text-sm font-medium text-gray-700">
+                Catatan Penerbangan / Harga
+            </label>
+
+            <textarea
+                name="flight_note"
+                id="flight_note"
+                rows="3"
+                placeholder="Contoh: Harga dihitung dari Bandara ke Bandara (Bim to Bim)."
+                class="w-full resize-y rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100"
+            >{{ old('flight_note') }}</textarea>
+        </div>
+    </div>
+</div>
+
+
 {{-- PREVIEW GAMBAR --}}
 <script>
     const imageInput = document.getElementById('image');

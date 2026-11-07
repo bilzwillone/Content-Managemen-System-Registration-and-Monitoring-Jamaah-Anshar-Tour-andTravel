@@ -178,7 +178,76 @@
                                       placeholder="Tuliskan informasi dan fasilitas paket..."
                                       class="w-full resize-y rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100">{{ old('description', $package->description) }}</textarea>
                         </div>
+                        {{-- FASILITAS PAKET --}}
+                        <div>
+                            <label class="mb-3 block text-sm font-medium text-gray-700">
+                                Fasilitas Paket
+                            </label>
 
+                            <p class="mb-3 text-xs text-gray-500">
+                                Masukkan fasilitas yang termasuk dalam paket umroh.
+                            </p>
+
+                            <div class="space-y-3">
+                                @for ($i = 0; $i < 6; $i++)
+                                    <input
+                                        type="text"
+                                        name="facilities[]"
+                                        value="{{ old('facilities.' . $i, $package->facilities[$i] ?? '') }}"
+                                        placeholder="Contoh: Tiket pesawat pulang pergi"
+                                        class="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100"
+                                    >
+                                @endfor
+                            </div>
+                        </div>
+
+                        {{-- HOTEL MAKKAH DAN MADINAH --}}
+                        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                            <div>
+                                <label for="hotel_makkah" class="mb-2 block text-sm font-medium text-gray-700">
+                                    Hotel Makkah
+                                </label>
+
+                                <input
+                                    type="text"
+                                    name="hotel_makkah"
+                                    id="hotel_makkah"
+                                    value="{{ old('hotel_makkah', $package->hotel_makkah) }}"
+                                    placeholder="Nama hotel di Makkah"
+                                    class="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100"
+                                >
+                            </div>
+
+                            <div>
+                                <label for="hotel_madinah" class="mb-2 block text-sm font-medium text-gray-700">
+                                    Hotel Madinah
+                                </label>
+
+                                <input
+                                    type="text"
+                                    name="hotel_madinah"
+                                    id="hotel_madinah"
+                                    value="{{ old('hotel_madinah', $package->hotel_madinah) }}"
+                                    placeholder="Nama hotel di Madinah"
+                                    class="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100"
+                                >
+                            </div>
+                        </div>
+
+                        {{-- KETERANGAN PENERBANGAN --}}
+                        <div>
+                            <label for="flight_note" class="mb-2 block text-sm font-medium text-gray-700">
+                                Keterangan Penerbangan
+                            </label>
+
+                            <textarea
+                                name="flight_note"
+                                id="flight_note"
+                                rows="3"
+                                placeholder="Contoh: Penerbangan langsung dari Jakarta menuju Jeddah."
+                                class="w-full resize-y rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100"
+                            >{{ old('flight_note', $package->flight_note) }}</textarea>
+                        </div>
                     </div>
                 </div>
 
