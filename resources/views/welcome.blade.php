@@ -24,70 +24,8 @@
             ->values();
     @endphp
 
-    {{-- NAVBAR --}}
-    <header class="sticky top-0 z-50 border-b border-gray-100 bg-white">
-        <div class="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 lg:px-8">
-
-            <a href="/" class="flex items-center gap-3">
-                <img
-                    src="{{ asset('images/ansar-travel-logo.png') }}"
-                    alt="Logo Ansar Travel"
-                    class="h-12 w-12 object-contain"
-                >
-
-                <div>
-                    <h1 class="text-lg font-extrabold tracking-wide text-gray-900">
-                        ANSHAR TRAVEL
-                    </h1>
-                    <p class="text-xs text-gray-500">
-                        Your Trusted Travel Partner
-                    </p>
-                </div>
-            </a>
-
-            <nav class="hidden items-center gap-8 text-sm font-semibold text-gray-700 lg:flex">
-                <a href="/" class="text-amber-600">Beranda</a>
-                <a href="/paket-umroh" class="transition hover:text-amber-600">Paket Umroh</a>
-                <a href="/jadwal" class="transition hover:text-amber-600">Jadwal</a>
-                <a href="/tentang-kami" class="transition hover:text-amber-600">Tentang Kami</a>
-                <a href="/info" class="transition hover:text-amber-600">Info</a>
-                <a href="/kontak" class="transition hover:text-amber-600">Kontak</a>
-            </nav>
-
-            <a
-                href="/kontak"
-                class="hidden rounded-full bg-amber-400 px-6 py-3 text-sm font-bold text-gray-900 transition hover:bg-amber-500 lg:inline-block"
-            >
-                Konsultasi
-            </a>
-
-            <button
-                id="menu-button"
-                type="button"
-                class="rounded-lg border border-gray-200 p-2 text-gray-700 lg:hidden"
-                aria-label="Buka menu navigasi"
-                aria-expanded="false"
-            >
-                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-            </button>
-
-        </div>
-
-        {{-- MOBILE MENU --}}
-        <nav id="mobile-menu" class="hidden border-t border-gray-100 bg-white px-5 py-4 lg:hidden">
-            <div class="flex flex-col gap-4 text-sm font-semibold text-gray-700">
-                <a href="/">Beranda</a>
-                <a href="/paket-umroh">Paket Umroh</a>
-                <a href="/jadwal">Jadwal</a>
-                <a href="/tentang-kami">Tentang Kami</a>
-                <a href="/info">Info</a>
-                <a href="/kontak">Kontak</a>
-            </div>
-        </nav>
-    </header>
+    {{-- NAVBAR DINAMIS --}}
+    @include('partials.public-navbar')
 
     <main>
 
@@ -563,19 +501,6 @@
             &copy; {{ date('Y') }} Ansar Travel. Seluruh hak cipta dilindungi.
         </div>
     </footer>
-
-    {{-- MOBILE MENU SCRIPT --}}
-    <script>
-        const menuButton = document.getElementById('menu-button');
-        const mobileMenu = document.getElementById('mobile-menu');
-
-        menuButton?.addEventListener('click', function () {
-            mobileMenu.classList.toggle('hidden');
-
-            const isExpanded = !mobileMenu.classList.contains('hidden');
-            menuButton.setAttribute('aria-expanded', isExpanded);
-        });
-    </script>
 
 </body>
 </html>

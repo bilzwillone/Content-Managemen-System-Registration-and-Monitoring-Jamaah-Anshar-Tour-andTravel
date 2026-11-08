@@ -190,25 +190,24 @@
                             </td>
 
                             {{-- AKSI --}}
-                            <td class="px-5 py-4 text-center">
+                            <td class="px-5 py-4">
+                                <div class="flex flex-wrap items-center justify-center gap-2">
 
-                                <a
-                                    href="{{ route('admin.pages.sections', $page->id) }}"
-                                    class="inline-flex items-center justify-center gap-2 rounded-lg bg-[#FDD52E] px-4 py-2 text-xs font-semibold text-gray-900 transition hover:bg-[#eac323]"
-                                >
-                                    Kelola Section
+                                    <a
+                                        href="{{ route('admin.pages.edit', $page->id) }}"
+                                        class="rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-600 transition hover:bg-blue-100"
+                                    >
+                                        Edit
+                                    </a>
 
-                                    <svg xmlns="http://www.w3.org/2000/svg"
-                                         width="14" height="14"
-                                         viewBox="0 0 24 24"
-                                         fill="none" stroke="currentColor"
-                                         stroke-width="2"
-                                         stroke-linecap="round"
-                                         stroke-linejoin="round">
-                                        <path d="m9 18 6-6-6-6"/>
-                                    </svg>
-                                </a>
+                                    <a
+                                        href="{{ route('admin.pages.sections', $page->id) }}"
+                                        class="rounded-lg bg-[#FDD52E] px-3 py-2 text-xs font-semibold text-gray-900 transition hover:bg-[#eac323]"
+                                    >
+                                        Kelola Section
+                                    </a>
 
+                                </div>
                             </td>
 
                         </tr>

@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\PackageController;
+use App\Http\Controllers\PublicPageController;
 use App\Http\Controllers\PackageController as PublicPackageController;
 use App\Models\User;
 use App\Models\Page;
@@ -184,3 +185,7 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
+
+Route::get('/{slug}', [PublicPageController::class, 'show'])
+    ->where('slug', '[A-Za-z0-9_-]+')
+    ->name('pages.public.show');
