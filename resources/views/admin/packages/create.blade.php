@@ -159,7 +159,7 @@
 
                         </div>
 
-                        {{-- HOTEL --}}
+                        {{-- HOTEL LAMA --}}
                         <div>
                             <label for="hotel" class="mb-2 block text-sm font-medium text-gray-700">
                                 Hotel
@@ -184,6 +184,92 @@
                                       rows="5"
                                       placeholder="Tuliskan informasi, fasilitas, dan keunggulan paket umroh..."
                                       class="w-full resize-y rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100">{{ old('description') }}</textarea>
+                        </div>
+
+                        {{-- FASILITAS PAKET --}}
+                        <div class="border-t border-gray-100 pt-5">
+
+                            <label class="mb-2 block text-sm font-medium text-gray-700">
+                                Fasilitas yang Termasuk
+                            </label>
+
+                            <p class="mb-3 text-xs text-gray-500">
+                                Isi satu fasilitas pada setiap kolom. Kolom yang tidak digunakan boleh dikosongkan.
+                            </p>
+
+                            @php
+                                $facilityInputs = old('facilities', []);
+                                $facilityInputs = array_pad($facilityInputs, 6, '');
+                            @endphp
+
+                            <div class="space-y-3">
+                                @foreach ($facilityInputs as $index => $facility)
+                                    <input
+                                        type="text"
+                                        name="facilities[]"
+                                        value="{{ $facility }}"
+                                        placeholder="Contoh: Tiket pesawat PP"
+                                        class="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100"
+                                    >
+                                @endforeach
+                            </div>
+
+                        </div>
+
+                        {{-- AKOMODASI DAN PENERBANGAN --}}
+                        <div class="border-t border-gray-100 pt-5">
+
+                            <h3 class="mb-4 font-semibold text-gray-800">
+                                Akomodasi dan Penerbangan
+                            </h3>
+
+                            <div class="space-y-4">
+
+                                <div>
+                                    <label for="hotel_makkah" class="mb-2 block text-sm font-medium text-gray-700">
+                                        Hotel Makkah
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        name="hotel_makkah"
+                                        id="hotel_makkah"
+                                        value="{{ old('hotel_makkah') }}"
+                                        placeholder="Contoh: Maysan Al Mashaeer / Setaraf"
+                                        class="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100"
+                                    >
+                                </div>
+
+                                <div>
+                                    <label for="hotel_madinah" class="mb-2 block text-sm font-medium text-gray-700">
+                                        Hotel Madinah
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        name="hotel_madinah"
+                                        id="hotel_madinah"
+                                        value="{{ old('hotel_madinah') }}"
+                                        placeholder="Contoh: Arkan Al Manar / Setaraf"
+                                        class="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100"
+                                    >
+                                </div>
+
+                                <div>
+                                    <label for="flight_note" class="mb-2 block text-sm font-medium text-gray-700">
+                                        Catatan Penerbangan / Harga
+                                    </label>
+
+                                    <textarea
+                                        name="flight_note"
+                                        id="flight_note"
+                                        rows="3"
+                                        placeholder="Contoh: Harga dihitung dari Bandara ke Bandara (Bim to Bim)."
+                                        class="w-full resize-y rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100"
+                                    >{{ old('flight_note') }}</textarea>
+                                </div>
+
+                            </div>
                         </div>
 
                     </div>
@@ -255,6 +341,57 @@
                                 Hapus gambar
                             </button>
                         </div>
+
+                            {{-- GALERI FOTO PAKET --}}
+                            <div class="mt-6 border-t border-gray-100 pt-5">
+
+                                <label class="mb-2 block text-sm font-semibold text-gray-800">
+                                    Galeri Foto Paket
+                                </label>
+
+                                <p class="mb-4 text-xs leading-5 text-gray-500">
+                                    Upload beberapa foto tambahan seperti hotel Makkah, hotel Madinah,
+                                    pesawat, dan dokumentasi perjalanan. Maksimal 4 MB per foto.
+                                </p>
+
+                                <label for="gallery-images"
+                                    class="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center transition hover:border-yellow-400 hover:bg-yellow-50">
+
+                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                        width="32" height="32"
+                                        viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor"
+                                        stroke-width="1.5" stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        class="mb-3 text-gray-400">
+                                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                                        <path d="m21 15-5-5L5 21"/>
+                                    </svg>
+
+                                    <span class="text-sm font-semibold text-gray-700">
+                                        Klik untuk memilih beberapa foto
+                                    </span>
+
+                                    <span class="mt-1 text-xs text-gray-400">
+                                        JPG, PNG, atau WebP
+                                    </span>
+                                </label>
+
+                                <input
+                                    type="file"
+                                    name="images[]"
+                                    id="gallery-images"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    multiple
+                                    class="hidden"
+                                >
+
+                                <div id="gallery-preview"
+                                    class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                                </div>
+
+                            </div>
 
                     </div>
                 </div>
@@ -365,107 +502,70 @@
 
 </div>
 
-<div>
-    <label class="mb-2 block text-sm font-medium text-gray-700">
-        Fasilitas yang Termasuk
-    </label>
+    {{-- PREVIEW GAMBAR --}}
+    <script>
+        const imageInput = document.getElementById('image');
+        const previewContainer = document.getElementById('image-preview-container');
+        const imagePreview = document.getElementById('image-preview');
+        const removeImage = document.getElementById('remove-image');
 
-    <p class="mb-3 text-xs text-gray-500">
-        Isi satu fasilitas pada setiap kolom. Kolom yang tidak digunakan boleh dikosongkan.
-    </p>
+        let previewUrl = null;
 
-    <div class="space-y-3">
-        @php
-            $facilityInputs = old('facilities', []);
-            $facilityInputs = array_pad($facilityInputs, 6, '');
-        @endphp
+        imageInput.addEventListener('change', function () {
+            const file = this.files[0];
 
-        @foreach ($facilityInputs as $index => $facility)
-            <input
-                type="text"
-                name="facilities[]"
-                value="{{ $facility }}"
-                placeholder="Contoh: Tiket pesawat PP"
-                class="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100"
-            >
-        @endforeach
-    </div>
-</div>
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+                previewUrl = null;
+            }
 
-<div class="border-t border-gray-100 pt-5">
-    <h3 class="mb-4 font-semibold text-gray-800">
-        Akomodasi dan Penerbangan
-    </h3>
+            if (file) {
+                previewUrl = URL.createObjectURL(file);
+                imagePreview.src = previewUrl;
+                previewContainer.classList.remove('hidden');
+            }
+        });
 
-    <div class="space-y-4">
-        <div>
-            <label for="hotel_makkah" class="mb-2 block text-sm font-medium text-gray-700">
-                Hotel Makkah
-            </label>
+        removeImage.addEventListener('click', function () {
+            imageInput.value = '';
+            imagePreview.src = '';
+            previewContainer.classList.add('hidden');
 
-            <input
-                type="text"
-                name="hotel_makkah"
-                id="hotel_makkah"
-                value="{{ old('hotel_makkah') }}"
-                placeholder="Contoh: Maysan Al Mashaeer / Setaraf"
-                class="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100"
-            >
-        </div>
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+                previewUrl = null;
+            }
+        });
 
-        <div>
-            <label for="hotel_madinah" class="mb-2 block text-sm font-medium text-gray-700">
-                Hotel Madinah
-            </label>
+        const galleryInput = document.getElementById('gallery-images');
+        const galleryPreview = document.getElementById('gallery-preview');
 
-            <input
-                type="text"
-                name="hotel_madinah"
-                id="hotel_madinah"
-                value="{{ old('hotel_madinah') }}"
-                placeholder="Contoh: Arkan Al Manar / Setaraf"
-                class="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100"
-            >
-        </div>
+        galleryInput.addEventListener('change', function () {
+            galleryPreview.innerHTML = '';
 
-        <div>
-            <label for="flight_note" class="mb-2 block text-sm font-medium text-gray-700">
-                Catatan Penerbangan / Harga
-            </label>
+            const files = Array.from(this.files);
 
-            <textarea
-                name="flight_note"
-                id="flight_note"
-                rows="3"
-                placeholder="Contoh: Harga dihitung dari Bandara ke Bandara (Bim to Bim)."
-                class="w-full resize-y rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100"
-            >{{ old('flight_note') }}</textarea>
-        </div>
-    </div>
-</div>
+            files.forEach((file) => {
+                const imageUrl = URL.createObjectURL(file);
 
+                const wrapper = document.createElement('div');
+                wrapper.className = 'overflow-hidden rounded-lg border border-gray-200 bg-white';
 
-{{-- PREVIEW GAMBAR --}}
-<script>
-    const imageInput = document.getElementById('image');
-    const previewContainer = document.getElementById('image-preview-container');
-    const imagePreview = document.getElementById('image-preview');
-    const removeImage = document.getElementById('remove-image');
+                const img = document.createElement('img');
+                img.src = imageUrl;
+                img.alt = 'Preview foto galeri';
+                img.className = 'h-28 w-full object-cover';
 
-    imageInput.addEventListener('change', function () {
-        const file = this.files[0];
+                const caption = document.createElement('p');
+                caption.className = 'truncate px-2 py-2 text-xs text-gray-500';
+                caption.textContent = file.name;
 
-        if (file) {
-            imagePreview.src = URL.createObjectURL(file);
-            previewContainer.classList.remove('hidden');
-        }
-    });
+                wrapper.appendChild(img);
+                wrapper.appendChild(caption);
+                galleryPreview.appendChild(wrapper);
+            });
+        });
 
-    removeImage.addEventListener('click', function () {
-        imageInput.value = '';
-        imagePreview.src = '';
-        previewContainer.classList.add('hidden');
-    });
-</script>
+    </script>
 
 @endsection

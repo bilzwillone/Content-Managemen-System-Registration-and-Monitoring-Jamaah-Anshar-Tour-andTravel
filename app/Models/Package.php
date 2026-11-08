@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Package extends Model
 {
@@ -35,5 +36,11 @@ class Package extends Model
             'is_featured' => 'boolean',
             'is_visible' => 'boolean',
         ];
+    }
+
+    public function images(): HasMany
+    {
+        return $this->hasMany(PackageImage::class)
+            ->orderBy('sort_order');
     }
 }

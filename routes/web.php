@@ -62,10 +62,24 @@ Route::middleware(['auth', 'role:admin'])
     ->name('admin.')
     ->group(function () {
 
-        // Dashboard Admin
         Route::get('/', function () {
             return view('admin.dashboard');
         })->name('dashboard');
+
+        Route::get('/pages', [PageController::class, 'index'])
+            ->name('pages.index');
+
+        Route::get('/pages/create', [PageController::class, 'create'])
+            ->name('pages.create');
+
+        Route::post('/pages', [PageController::class, 'store'])
+            ->name('pages.store');
+
+        Route::get('/pages/{page}/edit', [PageController::class, 'edit'])
+            ->name('pages.edit');
+        
+        Route::put('/pages/{page}', [PageController::class, 'update'])
+            ->name('pages.update');
 
         Route::get('/pages', [PageController::class, 'index'])
             ->name('pages.index');
@@ -108,6 +122,9 @@ Route::middleware(['auth', 'role:admin'])
 
         Route::put('/packages/{package}', [PackageController::class, 'update'])
             ->name('packages.update');
+
+        Route::delete('/packages/{package}/images/{image}', [PackageController::class, 'destroyImage'])
+            ->name('packages.images.destroy');
 
         Route::delete('/packages/{package}', [PackageController::class, 'destroy'])
             ->name('packages.destroy');

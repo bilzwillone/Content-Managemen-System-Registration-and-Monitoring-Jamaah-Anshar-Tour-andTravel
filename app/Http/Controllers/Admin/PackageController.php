@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Package;
+use App\Models\PackageImage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -11,9 +12,7 @@ use Illuminate\Validation\Rule;
 
 class PackageController extends Controller
 {
-    /**
-     * Membuat slug yang unik.
-     */
+
     private function generateUniqueSlug(string $name, ?int $ignoreId = null): string
     {
         $baseSlug = Str::slug($name);
@@ -34,9 +33,6 @@ class PackageController extends Controller
         return $slug;
     }
 
-    /**
-     * Menyiapkan data fasilitas.
-     */
     private function prepareFacilities(?array $facilities): array
     {
         return array_values(array_filter(
@@ -45,9 +41,22 @@ class PackageController extends Controller
         ));
     }
 
-    /**
-     * Menampilkan daftar paket.
-     */
+    private function storeGalleryImages(Package $package, array $images): void
+    {
+        foreach ($images as $index => $image) {
+            if (!$image || !$image->isValid()) {
+                continue;
+            }
+
+            $path = $image->store('packages/gallery', 'public');
+
+            $package->images()->create([
+                'image_path' => $path,
+                'sort_order' => $package->images()->count(),
+            ]);
+        }
+    }
+
     public function index()
     {
         $packages = Package::latest()->paginate(10);
@@ -55,17 +64,11 @@ class PackageController extends Controller
         return view('admin.packages.index', compact('packages'));
     }
 
-    /**
-     * Menampilkan form tambah paket.
-     */
     public function create()
     {
         return view('admin.packages.create');
     }
 
-    /**
-     * Menyimpan paket baru.
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -78,7 +81,6 @@ class PackageController extends Controller
             'price' => ['nullable', 'numeric', 'min:0'],
             'duration_days' => ['nullable', 'integer', 'min:1'],
             'departure_date' => ['nullable', 'date'],
-
             'airline' => ['nullable', 'string', 'max:255'],
             'hotel' => ['nullable', 'string', 'max:255'],
             'hotel_makkah' => ['nullable', 'string', 'max:255'],
@@ -87,46 +89,40 @@ class PackageController extends Controller
 
             'image' => ['nullable', 'image', 'max:2048'],
 
+            'images' => ['nullable', 'array'],
+            'images.*' => ['image', 'max:4096'],
+
             'is_featured' => ['nullable', 'boolean'],
             'is_visible' => ['nullable', 'boolean'],
-
             'status' => ['required', Rule::in(['draft', 'published'])],
         ]);
 
         $validated['slug'] = $this->generateUniqueSlug($validated['name']);
-
-        $validated['facilities'] = $this->prepareFacilities(
-            $validated['facilities'] ?? []
-        );
-
+        $validated['facilities'] = $this->prepareFacilities($validated['facilities'] ?? []);
         $validated['is_featured'] = $request->boolean('is_featured');
         $validated['is_visible'] = $request->boolean('is_visible');
 
         if ($request->hasFile('image')) {
-            $validated['image_path'] = $request->file('image')
-                ->store('packages', 'public');
+            $validated['image_path'] = $request->file('image')->store('packages', 'public');
         }
 
-        unset($validated['image']);
+        unset($validated['image'], $validated['images']);
 
-        Package::create($validated);
+        $package = Package::create($validated);
 
-        return redirect()
-            ->route('admin.packages.index')
+        $this->storeGalleryImages($package, $request->file('images', []));
+
+        return redirect()->route('admin.packages.index')
             ->with('success', 'Paket umroh berhasil ditambahkan.');
     }
 
-    /**
-     * Menampilkan form edit paket.
-     */
     public function edit(Package $package)
     {
+        $package->load('images');
+
         return view('admin.packages.edit', compact('package'));
     }
 
-    /**
-     * Memperbarui paket.
-     */
     public function update(Request $request, Package $package)
     {
         $validated = $request->validate([
@@ -139,7 +135,6 @@ class PackageController extends Controller
             'price' => ['nullable', 'numeric', 'min:0'],
             'duration_days' => ['nullable', 'integer', 'min:1'],
             'departure_date' => ['nullable', 'date'],
-
             'airline' => ['nullable', 'string', 'max:255'],
             'hotel' => ['nullable', 'string', 'max:255'],
             'hotel_makkah' => ['nullable', 'string', 'max:255'],
@@ -148,21 +143,16 @@ class PackageController extends Controller
 
             'image' => ['nullable', 'image', 'max:2048'],
 
+            'images' => ['nullable', 'array'],
+            'images.*' => ['image', 'max:4096'],
+
             'is_featured' => ['nullable', 'boolean'],
             'is_visible' => ['nullable', 'boolean'],
-
             'status' => ['required', Rule::in(['draft', 'published'])],
         ]);
 
-        $validated['slug'] = $this->generateUniqueSlug(
-            $validated['name'],
-            $package->id
-        );
-
-        $validated['facilities'] = $this->prepareFacilities(
-            $validated['facilities'] ?? []
-        );
-
+        $validated['slug'] = $this->generateUniqueSlug($validated['name'], $package->id);
+        $validated['facilities'] = $this->prepareFacilities($validated['facilities'] ?? []);
         $validated['is_featured'] = $request->boolean('is_featured');
         $validated['is_visible'] = $request->boolean('is_visible');
 
@@ -171,32 +161,54 @@ class PackageController extends Controller
                 Storage::disk('public')->delete($package->image_path);
             }
 
-            $validated['image_path'] = $request->file('image')
-                ->store('packages', 'public');
+            $validated['image_path'] = $request->file('image')->store('packages', 'public');
         }
 
-        unset($validated['image']);
+        unset($validated['image'], $validated['images']);
 
         $package->update($validated);
 
-        return redirect()
-            ->route('admin.packages.index')
+        // Foto lama tetap dipertahankan, foto baru ditambahkan.
+        $this->storeGalleryImages($package, $request->file('images', []));
+
+        return redirect()->route('admin.packages.index')
             ->with('success', 'Paket umroh berhasil diperbarui.');
     }
 
-    /**
-     * Menghapus paket.
-     */
     public function destroy(Package $package)
     {
+        foreach ($package->images as $galleryImage) {
+            if ($galleryImage->image_path) {
+                Storage::disk('public')->delete($galleryImage->image_path);
+            }
+        }
+
         if ($package->image_path) {
             Storage::disk('public')->delete($package->image_path);
         }
 
         $package->delete();
 
-        return redirect()
-            ->route('admin.packages.index')
+        return redirect()->route('admin.packages.index')
             ->with('success', 'Paket umroh berhasil dihapus.');
     }
+
+    public function destroyImage(Package $package, PackageImage $image)
+    {
+        if ($image->package_id !== $package->id) {
+            abort(404);
+        }
+
+        if ($image->image_path) {
+            Storage::disk('public')->delete($image->image_path);
+        }
+
+        $image->delete();
+
+        return redirect()
+            ->route('admin.packages.edit', $package->id)
+            ->with('success', 'Foto galeri berhasil dihapus.');
+    }
+
+
 }

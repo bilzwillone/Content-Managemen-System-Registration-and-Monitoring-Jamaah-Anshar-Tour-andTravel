@@ -161,6 +161,78 @@
                             @endif
 
                         </div>
+                        
+                        {{-- GALERI FOTO PAKET --}}
+                        @if ($package->images->isNotEmpty())
+                            <div class="mt-8 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
+
+                                <div class="mb-6">
+                                    <h2 class="text-xl font-extrabold text-gray-900">
+                                        Galeri Foto Paket
+                                    </h2>
+
+                                    <p class="mt-2 text-sm text-gray-500">
+                                        Lihat dokumentasi dan fasilitas perjalanan bersama Ansar Travel.
+                                    </p>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-4 sm:grid-cols-3">
+
+                                    @foreach ($package->images as $galleryImage)
+                                        <button
+                                            type="button"
+                                            class="gallery-trigger group relative block w-full overflow-hidden rounded-xl bg-gray-100"
+                                            data-image="{{ asset('storage/' . $galleryImage->image_path) }}"
+                                            aria-label="Perbesar foto galeri"
+                                        >
+                                            <img
+                                                src="{{ asset('storage/' . $galleryImage->image_path) }}"
+                                                alt="Galeri {{ $package->name }}"
+                                                loading="lazy"
+                                                class="h-36 w-full object-cover transition duration-300 group-hover:scale-105 sm:h-48"
+                                            >
+
+                                            <div class="absolute inset-0 flex items-center justify-center bg-black/0 transition group-hover:bg-black/20">
+                                                <span class="rounded-full bg-white/90 px-3 py-2 text-xs font-semibold text-gray-800 opacity-0 transition group-hover:opacity-100">
+                                                    Lihat Foto
+                                                </span>
+                                            </div>
+                                        </button>
+                                    @endforeach
+
+                                </div>
+
+                            </div>
+                        @endif
+
+                        {{-- LIGHTBOX FOTO --}}
+                        <div
+                            id="gallery-lightbox"
+                            class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/85 p-4"
+                            role="dialog"
+                            aria-modal="true"
+                            aria-label="Pratinjau foto galeri"
+                        >
+                            {{-- TOMBOL TUTUP --}}
+                            <button
+                                type="button"
+                                id="close-lightbox"
+                                class="absolute right-5 top-5 flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-3xl text-white transition hover:bg-white/30"
+                                aria-label="Tutup foto"
+                            >
+                                &times;
+                            </button>
+
+                            {{-- FOTO BESAR --}}
+                            <img
+                                id="lightbox-image"
+                                src=""
+                                alt="Foto galeri paket"
+                                class="max-h-[85vh] max-w-full rounded-lg object-contain shadow-2xl"
+                            >
+                        </div>
+
+
 
                         {{-- DESKRIPSI --}}
                         <div class="mt-8 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
@@ -414,6 +486,53 @@
 
             const isExpanded = !mobileMenu.classList.contains('hidden');
             menuButton.setAttribute('aria-expanded', isExpanded);
+        });
+    </script>
+    
+    <script>
+        const galleryTriggers = document.querySelectorAll('.gallery-trigger');
+        const lightbox = document.getElementById('gallery-lightbox');
+        const lightboxImage = document.getElementById('lightbox-image');
+        const closeLightbox = document.getElementById('close-lightbox');
+
+        function openLightbox(imageUrl) {
+            lightboxImage.src = imageUrl;
+
+            lightbox.classList.remove('hidden');
+            lightbox.classList.add('flex');
+
+            document.body.style.overflow = 'hidden';
+
+            closeLightbox.focus();
+        }
+
+        function hideLightbox() {
+            lightbox.classList.add('hidden');
+            lightbox.classList.remove('flex');
+
+            lightboxImage.src = '';
+
+            document.body.style.overflow = '';
+        }
+
+        galleryTriggers.forEach((button) => {
+            button.addEventListener('click', function () {
+                openLightbox(this.dataset.image);
+            });
+        });
+
+        closeLightbox.addEventListener('click', hideLightbox);
+
+        lightbox.addEventListener('click', function (event) {
+            if (event.target === lightbox) {
+                hideLightbox();
+            }
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && !lightbox.classList.contains('hidden')) {
+                hideLightbox();
+            }
         });
     </script>
 </body>

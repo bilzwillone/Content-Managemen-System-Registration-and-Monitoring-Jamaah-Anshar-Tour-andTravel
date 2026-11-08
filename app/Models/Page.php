@@ -7,11 +7,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Page extends Model
 {
-     protected $fillable = [
+    protected $fillable = [
         'title',
         'slug',
         'description',
         'is_published',
+        'show_in_navbar',
+        'nav_order',
         'meta_title',
         'meta_description',
     ];
@@ -20,6 +22,8 @@ class Page extends Model
     {
         return [
             'is_published' => 'boolean',
+            'show_in_navbar' => 'boolean',
+            'nav_order' => 'integer',
         ];
     }
 
