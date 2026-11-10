@@ -1,3 +1,4 @@
+
 <?php
 
 use App\Http\Controllers\ProfileController;
@@ -17,7 +18,6 @@ use App\Models\Page;
 use App\Models\Package;
 use Illuminate\Support\Facades\Route;
 
-// HALAMAN BERANDA
 Route::get('/', function () {
 
     $page = Page::where('slug', 'beranda')
@@ -38,7 +38,6 @@ Route::get('/', function () {
 
 });
 
-// HALAMAN PAKET UMROH
 Route::get('/paket-umroh', function () {
 
     $packages = Package::where('status', 'published')
@@ -53,11 +52,10 @@ Route::get('/paket-umroh', function () {
 Route::get('/paket-umroh/{slug}', [PublicPackageController::class, 'show'])
     ->name('packages.show');
 
-// HALAMAN JADWAL PUBLIK
+
 Route::get('/jadwal', [PublicScheduleController::class, 'index'])
     ->name('schedules.public');
 
-// PENGALIHAN DASHBOARD BERDASARKAN ROLE
 Route::get('/dashboard', function () {
 
     $user = auth()->user();
@@ -72,8 +70,6 @@ Route::get('/dashboard', function () {
 
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-
-// ADMIN
 Route::middleware(['auth', 'role:admin'])
     ->prefix('admin')
     ->name('admin.')
@@ -82,6 +78,7 @@ Route::middleware(['auth', 'role:admin'])
         Route::get('/', function () {
             return view('admin.dashboard');
         })->name('dashboard');
+
 
         // MANAJEMEN PENGGUNA
         Route::get('/users', [UserController::class, 'index'])
@@ -98,12 +95,10 @@ Route::middleware(['auth', 'role:admin'])
 
         Route::put('/users/{user}', [UserController::class, 'update'])
             ->name('users.update');
-        
+
         Route::delete('/users/{user}', [UserController::class, 'destroy'])
             ->name('users.destroy');
 
-        Route::delete('/pages/{page}', [PageController::class, 'destroy'])
-            ->name('pages.destroy');
 
         // KELOLA HALAMAN
         Route::get('/pages', [PageController::class, 'index'])
@@ -120,6 +115,10 @@ Route::middleware(['auth', 'role:admin'])
 
         Route::put('/pages/{page}', [PageController::class, 'update'])
             ->name('pages.update');
+
+        Route::delete('/pages/{page}', [PageController::class, 'destroy'])
+            ->name('pages.destroy');
+
 
         // KELOLA SECTION
         Route::get('/pages/{page}/sections', [PageController::class, 'sections'])
@@ -184,14 +183,36 @@ Route::middleware(['auth', 'role:karyawan'])
     ->name('karyawan.')
     ->group(function () {
 
+        // DASHBOARD KARYAWAN
         Route::get('/', function () {
             return view('dashboard.karyawan');
         })->name('dashboard');
 
         Route::resource('prospects', ProspectController::class);
-        Route::post('/prospects/{prospect}/follow-ups', [ProspectFollowUpController::class, 'store'])->name('prospects.follow-ups.store');
-        Route::post('/prospects/{prospect}/convert',[ProspectController::class, 'convertToJamaah'])->name('prospects.convert');
-        Route::get('/jamaahs', [JamaahController::class, 'index'])->name('jamaahs.index');
+
+        // Riwayat Follow-up
+        Route::post(
+            '/prospects/{prospect}/follow-ups',
+            [ProspectFollowUpController::class, 'store']
+        )->name('prospects.follow-ups.store');
+
+        // Konversi Calon Jamaah menjadi Jamaah
+        Route::post(
+            '/prospects/{prospect}/convert',
+            [ProspectController::class, 'convertToJamaah']
+        )->name('prospects.convert');
+
+        Route::get('/jamaahs', [JamaahController::class, 'index'])
+            ->name('jamaahs.index');
+
+        Route::get('/jamaahs/{jamaah}/edit', [JamaahController::class, 'edit'])
+            ->name('jamaahs.edit');
+
+        Route::put('/jamaahs/{jamaah}', [JamaahController::class, 'update'])
+            ->name('jamaahs.update');
+
+        Route::get('/jamaahs/{jamaah}', [JamaahController::class, 'show'])
+            ->name('jamaahs.show');
 
         Route::prefix('documents')
             ->name('documents.')
@@ -211,11 +232,11 @@ Route::middleware(['auth', 'role:karyawan'])
 
                 Route::get('/{jamaah}/{document}/download', [JamaahDocumentController::class, 'download'])
                     ->name('download');
+
             });
+
     });
 
-
-// DASHBOARD MUTHAWIF
 Route::middleware(['auth', 'role:muthawif'])
     ->prefix('muthawif')
     ->name('muthawif.')
@@ -229,8 +250,6 @@ Route::middleware(['auth', 'role:muthawif'])
 
     });
 
-
-// DASHBOARD JAMAAH
 Route::middleware(['auth', 'role:jamaah'])
     ->prefix('jamaah')
     ->name('jamaah.')
@@ -244,8 +263,6 @@ Route::middleware(['auth', 'role:jamaah'])
 
     });
 
-
-// PROFILE PENGGUNA
 Route::middleware('auth')->group(function () {
 
     Route::get('/profile', [ProfileController::class, 'edit'])

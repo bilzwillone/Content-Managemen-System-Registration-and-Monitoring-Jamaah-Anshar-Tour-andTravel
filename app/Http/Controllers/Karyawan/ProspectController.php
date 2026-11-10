@@ -180,7 +180,6 @@ class ProspectController extends Controller
 
     public function convertToJamaah(Prospect $prospect)
     {
-        // Pastikan status calon jamaah sudah mendaftar.
         if ($prospect->status !== 'mendaftar') {
             return back()->with(
                 'error',
@@ -188,7 +187,6 @@ class ProspectController extends Controller
             );
         }
 
-        // Pastikan calon jamaah belum pernah dikonversi.
         if ($prospect->jamaah()->exists()) {
             return back()->with(
                 'error',
@@ -198,7 +196,6 @@ class ProspectController extends Controller
 
         DB::transaction(function () use ($prospect) {
 
-            // Mengunci data untuk mencegah konversi ganda secara bersamaan.
             $lockedProspect = Prospect::whereKey($prospect->id)
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -211,8 +208,8 @@ class ProspectController extends Controller
                 abort(422, 'Calon jamaah sudah dikonversi sebelumnya.');
             }
 
-            // Membuat data Jamaah berdasarkan data calon jamaah.
-            $lockedProspect->jamaah()->create([
+            // Membuat data Jamaah.
+            $jamaah = $lockedProspect->jamaah()->create([
                 'package_id' => $lockedProspect->package_id,
                 'name' => $lockedProspect->name,
                 'phone' => $lockedProspect->phone,
@@ -221,10 +218,41 @@ class ProspectController extends Controller
                 'registration_date' => today(),
                 'status' => 'terdaftar',
             ]);
+
+            // Membuat nomor registrasi otomatis.
+            $registrationNumber = 'ANS-' .
+                now()->format('Y') . '-' .
+                str_pad($jamaah->id, 6, '0', STR_PAD_LEFT);
+
+            $jamaah->update([
+                'registration_number' => $registrationNumber,
+            ]);
+
+            // Membuat checklist enam dokumen wajib.
+            $requiredDocuments = [
+                'ktp' => 'KTP',
+                'kartu_keluarga' => 'Kartu Keluarga (KK)',
+                'pas_foto' => 'Pas Foto',
+                'paspor' => 'Paspor',
+                'vaksin_meningitis' => 'Surat Vaksin Meningitis',
+                'surat_polio' => 'Surat Polio',
+            ];
+
+            foreach ($requiredDocuments as $type => $name) {
+                $jamaah->documents()->create([
+                    'document_type' => $type,
+                    'document_name' => $name,
+                    'status' => 'belum_diupload',
+                ]);
+            }
         });
 
         return redirect()
             ->route('karyawan.prospects.show', $prospect)
-            ->with('success', 'Calon jamaah berhasil dikonversi menjadi data Jamaah.');
+            ->with(
+                'success',
+                'Calon jamaah berhasil dikonversi menjadi data Jamaah.'
+            );
     }
+
 }

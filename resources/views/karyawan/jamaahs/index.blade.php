@@ -15,7 +15,7 @@
     <div class="flex min-h-screen">
 
         @include('partials.sidebar')
-        
+
         <main class="min-w-0 flex-1">
 
             <div class="space-y-6 p-5 md:p-7">
@@ -136,6 +136,7 @@
                                     <th class="px-5 py-4 font-semibold">Tanggal Pendaftaran</th>
                                     <th class="px-5 py-4 font-semibold">Status</th>
                                     <th class="px-5 py-4 text-center font-semibold">Asal Data</th>
+                                    <th class="px-5 py-4 text-center font-semibold">Aksi</th>
                                 </tr>
                             </thead>
 
@@ -179,7 +180,7 @@
 
                                         <td class="px-5 py-4">
                                             <span class="inline-flex rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
-                                                {{ ucfirst($jamaah->status) }}
+                                                {{ ucfirst(str_replace('_', ' ', $jamaah->status)) }}
                                             </span>
                                         </td>
 
@@ -192,10 +193,28 @@
                                                     Lihat CRM
                                                 </a>
                                             @else
-                                                <span class="text-xs text-gray-400">
-                                                    -
-                                                </span>
+                                                <span class="text-xs text-gray-400">-</span>
                                             @endif
+                                        </td>
+
+                                        <!-- KOLOM AKSI -->
+                                        <td class="px-5 py-4">
+                                            <div class="flex items-center justify-center gap-2 whitespace-nowrap">
+
+                                                <a
+                                                    href="{{ route('karyawan.jamaahs.show', $jamaah) }}"
+                                                    class="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+                                                >
+                                                    Detail
+                                                </a>
+
+                                                <a
+                                                    href="{{ route('karyawan.jamaahs.edit', $jamaah) }}"
+                                                    class="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
+                                                >
+                                                    Edit
+                                                </a>
+                                            </div>
                                         </td>
 
                                     </tr>
@@ -203,19 +222,9 @@
                                 @empty
 
                                     <tr>
-                                        <td colspan="7" class="px-5 py-14 text-center">
+                                        <td colspan="8" class="px-5 py-14 text-center">
 
-                                            <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400">
-                                                <svg xmlns="http://www.w3.org/2000/svg"
-                                                     width="23" height="23" viewBox="0 0 24 24"
-                                                     fill="none" stroke="currentColor"
-                                                     stroke-width="1.7">
-                                                    <circle cx="12" cy="8" r="4"/>
-                                                    <path d="M4 21a8 8 0 0 1 16 0"/>
-                                                </svg>
-                                            </div>
-
-                                            <p class="mt-3 font-semibold text-gray-800">
+                                            <p class="font-semibold text-gray-800">
                                                 Belum ada data Jamaah
                                             </p>
 
@@ -229,6 +238,7 @@
                                 @endforelse
 
                             </tbody>
+
 
                         </table>
 
