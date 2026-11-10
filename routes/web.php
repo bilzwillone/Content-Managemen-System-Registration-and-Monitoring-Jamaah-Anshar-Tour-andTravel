@@ -1,4 +1,3 @@
-
 <?php
 
 use App\Http\Controllers\ProfileController;
@@ -8,6 +7,10 @@ use App\Http\Controllers\Admin\ScheduleController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\PublicPageController;
 use App\Http\Controllers\PublicScheduleController;
+use App\Http\Controllers\Karyawan\ProspectController;
+use App\Http\Controllers\Karyawan\ProspectFollowUpController;
+use App\Http\Controllers\Karyawan\JamaahController;
+use App\Http\Controllers\Karyawan\JamaahDocumentController;
 use App\Http\Controllers\PackageController as PublicPackageController;
 use App\Models\User;
 use App\Models\Page;
@@ -101,7 +104,7 @@ Route::middleware(['auth', 'role:admin'])
 
         Route::delete('/pages/{page}', [PageController::class, 'destroy'])
             ->name('pages.destroy');
-            
+
         // KELOLA HALAMAN
         Route::get('/pages', [PageController::class, 'index'])
             ->name('pages.index');
@@ -176,19 +179,39 @@ Route::middleware(['auth', 'role:admin'])
 
     });
 
-
-// DASHBOARD KARYAWAN
 Route::middleware(['auth', 'role:karyawan'])
     ->prefix('karyawan')
     ->name('karyawan.')
     ->group(function () {
 
         Route::get('/', function () {
-            return view('dashboard.role', [
-                'title' => 'Dashboard Karyawan Ansar Travel',
-            ]);
+            return view('dashboard.karyawan');
         })->name('dashboard');
 
+        Route::resource('prospects', ProspectController::class);
+        Route::post('/prospects/{prospect}/follow-ups', [ProspectFollowUpController::class, 'store'])->name('prospects.follow-ups.store');
+        Route::post('/prospects/{prospect}/convert',[ProspectController::class, 'convertToJamaah'])->name('prospects.convert');
+        Route::get('/jamaahs', [JamaahController::class, 'index'])->name('jamaahs.index');
+
+        Route::prefix('documents')
+            ->name('documents.')
+            ->group(function () {
+
+                Route::get('/', [JamaahDocumentController::class, 'index'])
+                    ->name('index');
+
+                Route::get('/{jamaah}', [JamaahDocumentController::class, 'show'])
+                    ->name('show');
+
+                Route::post('/{jamaah}/{document}/upload', [JamaahDocumentController::class, 'upload'])
+                    ->name('upload');
+
+                Route::patch('/{jamaah}/{document}/verify', [JamaahDocumentController::class, 'verify'])
+                    ->name('verify');
+
+                Route::get('/{jamaah}/{document}/download', [JamaahDocumentController::class, 'download'])
+                    ->name('download');
+            });
     });
 
 
@@ -238,8 +261,6 @@ Route::middleware('auth')->group(function () {
 
 require __DIR__ . '/auth.php';
 
-// HALAMAN DINAMIS
-// Harus selalu berada paling bawah agar tidak mengambil URL khusus seperti /jadwal.
 Route::get('/{slug}', [PublicPageController::class, 'show'])
     ->where('slug', '[A-Za-z0-9_-]+')
     ->name('pages.public.show');

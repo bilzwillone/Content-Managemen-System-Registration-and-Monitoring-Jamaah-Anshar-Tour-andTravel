@@ -26,7 +26,6 @@ class Page extends Model
             'nav_order' => 'integer',
         ];
     }
-
     public function sections(): HasMany
     {
         return $this->hasMany(PageSection::class)

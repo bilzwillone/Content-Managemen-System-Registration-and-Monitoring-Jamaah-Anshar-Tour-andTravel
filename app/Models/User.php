@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -42,6 +43,30 @@ class User extends Authenticatable
     public function isJamaah(): bool
     {
         return $this->hasRole(self::ROLE_JAMAAH);
+    }
+
+    /**
+     * Calon jamaah yang menjadi tanggung jawab Karyawan.
+     */
+    public function assignedProspects(): HasMany
+    {
+        return $this->hasMany(Prospect::class, 'pic_id');
+    }
+
+    /**
+     * Calon jamaah yang dicatat oleh pengguna.
+     */
+    public function createdProspects(): HasMany
+    {
+        return $this->hasMany(Prospect::class, 'created_by');
+    }
+
+    /**
+     * Riwayat follow-up yang dilakukan pengguna.
+     */
+    public function prospectFollowUps(): HasMany
+    {
+        return $this->hasMany(ProspectFollowUp::class, 'user_id');
     }
 
     protected function casts(): array
