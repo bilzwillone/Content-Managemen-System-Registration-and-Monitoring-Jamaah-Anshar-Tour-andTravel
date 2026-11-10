@@ -1,15 +1,19 @@
+
 <?php
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\PackageController;
+use App\Http\Controllers\Admin\ScheduleController;
 use App\Http\Controllers\PublicPageController;
+use App\Http\Controllers\PublicScheduleController;
 use App\Http\Controllers\PackageController as PublicPackageController;
 use App\Models\User;
 use App\Models\Page;
 use App\Models\Package;
 use Illuminate\Support\Facades\Route;
 
+// HALAMAN BERANDA
 Route::get('/', function () {
 
     $page = Page::where('slug', 'beranda')
@@ -30,6 +34,7 @@ Route::get('/', function () {
 
 });
 
+// HALAMAN PAKET UMROH
 Route::get('/paket-umroh', function () {
 
     $packages = Package::where('status', 'published')
@@ -44,6 +49,11 @@ Route::get('/paket-umroh', function () {
 Route::get('/paket-umroh/{slug}', [PublicPackageController::class, 'show'])
     ->name('packages.show');
 
+// HALAMAN JADWAL PUBLIK
+Route::get('/jadwal', [PublicScheduleController::class, 'index'])
+    ->name('schedules.public');
+
+// PENGALIHAN DASHBOARD BERDASARKAN ROLE
 Route::get('/dashboard', function () {
 
     $user = auth()->user();
@@ -58,6 +68,8 @@ Route::get('/dashboard', function () {
 
 })->middleware(['auth', 'verified'])->name('dashboard');
 
+
+// ADMIN
 Route::middleware(['auth', 'role:admin'])
     ->prefix('admin')
     ->name('admin.')
@@ -67,6 +79,7 @@ Route::middleware(['auth', 'role:admin'])
             return view('admin.dashboard');
         })->name('dashboard');
 
+        // KELOLA HALAMAN
         Route::get('/pages', [PageController::class, 'index'])
             ->name('pages.index');
 
@@ -78,13 +91,11 @@ Route::middleware(['auth', 'role:admin'])
 
         Route::get('/pages/{page}/edit', [PageController::class, 'edit'])
             ->name('pages.edit');
-        
+
         Route::put('/pages/{page}', [PageController::class, 'update'])
             ->name('pages.update');
 
-        Route::get('/pages', [PageController::class, 'index'])
-            ->name('pages.index');
-
+        // KELOLA SECTION
         Route::get('/pages/{page}/sections', [PageController::class, 'sections'])
             ->name('pages.sections');
 
@@ -109,6 +120,8 @@ Route::middleware(['auth', 'role:admin'])
         Route::patch('/pages/{page}/sections/{section}/order', [PageController::class, 'updateSectionOrder'])
             ->name('pages.sections.order');
 
+
+        // KELOLA PAKET UMROH
         Route::get('/packages', [PackageController::class, 'index'])
             ->name('packages.index');
 
@@ -130,8 +143,18 @@ Route::middleware(['auth', 'role:admin'])
         Route::delete('/packages/{package}', [PackageController::class, 'destroy'])
             ->name('packages.destroy');
 
+
+        // MANAJEMEN JADWAL KEBERANGKATAN
+        Route::resource('schedules', ScheduleController::class)
+            ->except(['show'])
+            ->parameters([
+                'schedules' => 'schedule',
+            ]);
+
     });
 
+
+// DASHBOARD KARYAWAN
 Route::middleware(['auth', 'role:karyawan'])
     ->prefix('karyawan')
     ->name('karyawan.')
@@ -145,6 +168,8 @@ Route::middleware(['auth', 'role:karyawan'])
 
     });
 
+
+// DASHBOARD MUTHAWIF
 Route::middleware(['auth', 'role:muthawif'])
     ->prefix('muthawif')
     ->name('muthawif.')
@@ -158,6 +183,8 @@ Route::middleware(['auth', 'role:muthawif'])
 
     });
 
+
+// DASHBOARD JAMAAH
 Route::middleware(['auth', 'role:jamaah'])
     ->prefix('jamaah')
     ->name('jamaah.')
@@ -171,6 +198,8 @@ Route::middleware(['auth', 'role:jamaah'])
 
     });
 
+
+// PROFILE PENGGUNA
 Route::middleware('auth')->group(function () {
 
     Route::get('/profile', [ProfileController::class, 'edit'])
@@ -184,8 +213,10 @@ Route::middleware('auth')->group(function () {
 
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
 
+// HALAMAN DINAMIS
+// Harus selalu berada paling bawah agar tidak mengambil URL khusus seperti /jadwal.
 Route::get('/{slug}', [PublicPageController::class, 'show'])
     ->where('slug', '[A-Za-z0-9_-]+')
     ->name('pages.public.show');

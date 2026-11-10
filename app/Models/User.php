@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,12 +12,8 @@ use Illuminate\Notifications\Notifiable;
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
-    
     use HasFactory, Notifiable;
 
-    use HasFactory, Notifiable;
-
-    
     public const ROLE_ADMIN = 'admin';
     public const ROLE_KARYAWAN = 'karyawan';
     public const ROLE_MUTHAWIF = 'muthawif';
