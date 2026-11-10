@@ -50,6 +50,12 @@
         </div>
     @endif
 
+    @if (session('error'))
+    <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        {{ session('error') }}
+    </div>
+    @endif
+
 
     {{-- RINGKASAN --}}
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -189,27 +195,37 @@
 
                             </td>
 
-                            {{-- AKSI --}}
                             <td class="px-5 py-4">
                                 <div class="flex flex-wrap items-center justify-center gap-2">
-
                                     <a
                                         href="{{ route('admin.pages.edit', $page->id) }}"
-                                        class="rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-600 transition hover:bg-blue-100"
-                                    >
+                                        class="rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-600 transition hover:bg-blue-100">
                                         Edit
                                     </a>
-
                                     <a
                                         href="{{ route('admin.pages.sections', $page->id) }}"
-                                        class="rounded-lg bg-[#FDD52E] px-3 py-2 text-xs font-semibold text-gray-900 transition hover:bg-[#eac323]"
-                                    >
+                                        class="rounded-lg bg-[#FDD52E] px-3 py-2 text-xs font-semibold text-gray-900 transition hover:bg-[#eac323]">
                                         Kelola Section
                                     </a>
+                                    @if ($page->slug !== 'beranda')
 
+                                        <form
+                                            action="{{ route('admin.pages.destroy', $page->id) }}"
+                                            method="POST"
+                                            onsubmit="return confirm('Apakah Anda yakin ingin menghapus halaman {{ addslashes($page->title) }} beserta seluruh section dan gambar di dalamnya? Tindakan ini tidak dapat dibatalkan.');">
+
+                                            @csrf
+                                            @method('DELETE')
+
+                                            <button
+                                                type="submit"
+                                                class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-100">
+                                                Hapus
+                                            </button>
+                                        </form>
+                                    @endif
                                 </div>
                             </td>
-
                         </tr>
 
                     @empty

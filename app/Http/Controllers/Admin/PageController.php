@@ -7,6 +7,7 @@ use App\Models\Page;
 use App\Models\PageSection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -144,14 +145,6 @@ class PageController extends Controller
         return view('admin.pages.create-section', compact('page', 'nextSortOrder'));
     }
 
-    // =========================================================
-    // VALIDASI SECTION
-    // =========================================================
-
-    /**
-     * Nomor urutan harus unik di dalam halaman yang sama.
-     * Saat edit, nomor milik section yang sedang diedit tetap diizinkan.
-     */
     private function sectionValidationRules(
         Request $request,
         Page $page,
@@ -293,10 +286,6 @@ class PageController extends Controller
             ? ['description' => $validated['content']]
             : null;
     }
-
-    // =========================================================
-    // MENYIAPKAN DATA TESTIMONI DAN FOTO
-    // =========================================================
 
     private function prepareTestimonialsContent(
         Request $request,
@@ -704,4 +693,65 @@ class PageController extends Controller
             ->route('admin.pages.sections', $page->id)
             ->with('success', 'Urutan section berhasil diperbarui.');
     }
+
+    public function destroy(Page $page)
+    {
+        
+        if ($page->slug === 'beranda') {
+            return redirect()
+                ->route('admin.pages.index')
+                ->with('error', 'Halaman Beranda tidak dapat dihapus karena merupakan halaman utama website.');
+        }
+
+        $sections = $page->sections()->get();
+
+        $filesToDelete = [];
+
+        foreach ($sections as $section) {
+
+            // Gambar utama section.
+            if ($section->image_path) {
+                $filesToDelete[] = $section->image_path;
+            }
+
+            // Foto dalam section galeri.
+            if ($section->section_type === 'gallery') {
+                foreach (data_get($section->content, 'items', []) as $item) {
+                    if (!empty($item['image_path'])) {
+                        $filesToDelete[] = $item['image_path'];
+                    }
+                }
+            }
+
+            // Foto dalam section testimoni.
+            if ($section->section_type === 'testimonials') {
+                foreach (data_get($section->content, 'items', []) as $item) {
+                    if (!empty($item['photo_path'])) {
+                        $filesToDelete[] = $item['photo_path'];
+                    }
+                }
+            }
+        }
+
+        // Hapus section dan halaman dalam satu transaksi database.
+        DB::transaction(function () use ($page, $sections) {
+
+            foreach ($sections as $section) {
+                $section->delete();
+            }
+
+            $page->delete();
+
+        });
+
+        // Hapus file gambar setelah penghapusan database berhasil.
+        foreach (array_unique($filesToDelete) as $filePath) {
+            Storage::disk('public')->delete($filePath);
+        }
+
+        return redirect()
+            ->route('admin.pages.index')
+            ->with('success', 'Halaman website beserta seluruh section berhasil dihapus.');
+    }
+
 }

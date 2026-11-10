@@ -5,6 +5,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\PackageController;
 use App\Http\Controllers\Admin\ScheduleController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\PublicPageController;
 use App\Http\Controllers\PublicScheduleController;
 use App\Http\Controllers\PackageController as PublicPackageController;
@@ -79,6 +80,28 @@ Route::middleware(['auth', 'role:admin'])
             return view('admin.dashboard');
         })->name('dashboard');
 
+        // MANAJEMEN PENGGUNA
+        Route::get('/users', [UserController::class, 'index'])
+            ->name('users.index');
+
+        Route::get('/users/create', [UserController::class, 'create'])
+            ->name('users.create');
+
+        Route::post('/users', [UserController::class, 'store'])
+            ->name('users.store');
+
+        Route::get('/users/{user}/edit', [UserController::class, 'edit'])
+            ->name('users.edit');
+
+        Route::put('/users/{user}', [UserController::class, 'update'])
+            ->name('users.update');
+        
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])
+            ->name('users.destroy');
+
+        Route::delete('/pages/{page}', [PageController::class, 'destroy'])
+            ->name('pages.destroy');
+            
         // KELOLA HALAMAN
         Route::get('/pages', [PageController::class, 'index'])
             ->name('pages.index');
