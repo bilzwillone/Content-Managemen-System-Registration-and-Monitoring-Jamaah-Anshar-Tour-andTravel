@@ -13,6 +13,7 @@ use App\Http\Controllers\Karyawan\ProspectFollowUpController;
 use App\Http\Controllers\Karyawan\JamaahController;
 use App\Http\Controllers\Karyawan\JamaahDocumentController;
 use App\Http\Controllers\Karyawan\PaymentController;
+use App\Http\Controllers\Karyawan\JamaahGroupController;
 use App\Http\Controllers\PackageController as PublicPackageController;
 use App\Http\Controllers\MidtransWebhookController;
 use App\Models\User;
@@ -215,6 +216,31 @@ Route::middleware(['auth', 'role:karyawan'])
 
         Route::get('/jamaahs/{jamaah}', [JamaahController::class, 'show'])
             ->name('jamaahs.show');
+        
+        Route::resource('groups', JamaahGroupController::class)
+            ->only([
+                'index',
+                'create',
+                'store',
+                'show',
+                'update',
+                'destroy',
+            ]);
+
+        Route::post('/groups/{group}/members', [
+            JamaahGroupController::class,
+            'addMember'
+        ])->name('groups.members.store');
+
+        Route::delete('/groups/{group}/members/{member}', [
+            JamaahGroupController::class,
+            'removeMember'
+        ])->name('groups.members.destroy');
+
+        Route::put('/groups/{group}/muthawifs', [
+            JamaahGroupController::class,
+            'assignMuthawifs'
+        ])->name('groups.muthawifs.update');
 
         Route::prefix('documents')
             ->name('documents.')
@@ -236,7 +262,7 @@ Route::middleware(['auth', 'role:karyawan'])
                     ->name('download');
 
             });
-            
+
             Route::prefix('payments')->name('payments.')->group(function () {
                 Route::get('/', [PaymentController::class, 'index'])
                     ->name('index');

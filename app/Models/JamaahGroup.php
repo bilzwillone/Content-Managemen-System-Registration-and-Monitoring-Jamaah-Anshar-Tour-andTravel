@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
@@ -17,25 +18,16 @@ class JamaahGroup extends Model
         'created_by',
     ];
 
-    /**
-     * Relasi dengan jadwal keberangkatan.
-     */
     public function schedule(): BelongsTo
     {
         return $this->belongsTo(Schedule::class);
     }
 
-    /**
-     * Relasi dengan karyawan yang membuat kelompok.
-     */
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    /**
-     * Relasi dengan seluruh anggota jamaah.
-     */
     public function members(): BelongsToMany
     {
         return $this->belongsToMany(
@@ -72,21 +64,31 @@ class JamaahGroup extends Model
         ->withTimestamps();
     }
 
-    /**
-     * Relasi dengan Muthawif utama.
-     */
     public function primaryMuthawif(): BelongsToMany
     {
         return $this->muthawifs()
             ->wherePivot('assignment_type', 'utama');
     }
 
-    /**
-     * Relasi dengan Muthawif pendamping.
-     */
     public function assistantMuthawif(): BelongsToMany
     {
         return $this->muthawifs()
             ->wherePivot('assignment_type', 'pendamping');
+    }
+
+    public function memberRecords(): HasMany
+    {
+        return $this->hasMany(
+            JamaahGroupMember::class,
+            'jamaah_group_id'
+        );
+    }
+
+    public function muthawifAssignments(): HasMany
+    {
+        return $this->hasMany(
+            JamaahGroupMuthawif::class,
+            'jamaah_group_id'
+        );
     }
 }

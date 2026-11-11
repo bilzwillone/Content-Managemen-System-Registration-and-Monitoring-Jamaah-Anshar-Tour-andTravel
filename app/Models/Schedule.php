@@ -89,4 +89,10 @@ class Schedule extends Model
             default => 'green',
         };
     }
+
+    public function groups(): HasMany
+    {
+        return $this->hasMany(JamaahGroup::class);
+    }
+    
 }

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
@@ -76,4 +77,46 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function muthawifGroups(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            JamaahGroup::class,
+            'jamaah_group_muthawifs',
+            'user_id',
+            'jamaah_group_id'
+        )
+        ->withPivot([
+            'assignment_type',
+            'assigned_by',
+            'notes',
+        ])
+        ->withTimestamps();
+    }
+
+    public function muthawifAssignments(): HasMany
+    {
+        return $this->hasMany(
+            JamaahGroupMuthawif::class,
+            'user_id'
+        );
+    }
+
+    public function assignedGroupMuthawifs(): HasMany
+    {
+        return $this->hasMany(
+            JamaahGroupMuthawif::class,
+            'assigned_by'
+        );
+    }
+
+    public function createdJamaahGroups(): HasMany
+    {
+        return $this->hasMany(
+            JamaahGroup::class,
+            'created_by'
+        );
+    }
+
+
 }

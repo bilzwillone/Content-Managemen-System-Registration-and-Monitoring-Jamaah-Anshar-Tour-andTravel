@@ -1,4 +1,3 @@
-
 @php
     $role = auth()->user()->role ?? null;
 
@@ -7,21 +6,41 @@
             [
                 'title' => 'Menu Utama',
                 'items' => [
-                    ['label' => 'Dashboard', 'route' => 'admin.dashboard', 'active' => 'admin.dashboard'],
+                    [
+                        'label' => 'Dashboard',
+                        'route' => 'admin.dashboard',
+                        'active' => 'admin.dashboard',
+                    ],
                 ],
             ],
             [
                 'title' => 'Manajemen Website',
                 'items' => [
-                    ['label' => 'Kelola Halaman', 'route' => 'admin.pages.index', 'active' => 'admin.pages.*'],
-                    ['label' => 'Paket Umroh', 'route' => 'admin.packages.index', 'active' => 'admin.packages.*'],
-                    ['label' => 'Jadwal Keberangkatan', 'route' => 'admin.schedules.index', 'active' => 'admin.schedules.*'],
+                    [
+                        'label' => 'Kelola Halaman',
+                        'route' => 'admin.pages.index',
+                        'active' => 'admin.pages.*',
+                    ],
+                    [
+                        'label' => 'Paket Umroh',
+                        'route' => 'admin.packages.index',
+                        'active' => 'admin.packages.*',
+                    ],
+                    [
+                        'label' => 'Jadwal Keberangkatan',
+                        'route' => 'admin.schedules.index',
+                        'active' => 'admin.schedules.*',
+                    ],
                 ],
             ],
             [
                 'title' => 'Manajemen Sistem',
                 'items' => [
-                    ['label' => 'Manajemen Pengguna', 'route' => 'admin.users.index', 'active' => 'admin.users.*'],
+                    [
+                        'label' => 'Manajemen Pengguna',
+                        'route' => 'admin.users.index',
+                        'active' => 'admin.users.*',
+                    ],
                 ],
             ],
         ],
@@ -30,25 +49,55 @@
             [
                 'title' => 'Menu Utama',
                 'items' => [
-                    ['label' => 'Dashboard', 'route' => 'karyawan.dashboard', 'active' => 'karyawan.dashboard'],
+                    [
+                        'label' => 'Dashboard',
+                        'route' => 'karyawan.dashboard',
+                        'active' => 'karyawan.dashboard',
+                    ],
                 ],
             ],
             [
                 'title' => 'Manajemen Jamaah',
                 'items' => [
-                    ['label' => 'Calon Jamaah & CRM', 'route' => 'karyawan.prospects.index', 'active' => 'karyawan.prospects.*'],
-                    ['label' => 'Data Jamaah', 'route' => 'karyawan.jamaahs.index', 'active' => 'karyawan.jamaahs.*'],
-                    ['label' => 'Dokumen Jamaah','route' => 'karyawan.documents.index','active' => 'karyawan.documents.*',],
+                    [
+                        'label' => 'Calon Jamaah & CRM',
+                        'route' => 'karyawan.prospects.index',
+                        'active' => 'karyawan.prospects.*',
+                    ],
+                    [
+                        'label' => 'Data Jamaah',
+                        'route' => 'karyawan.jamaahs.index',
+                        'active' => 'karyawan.jamaahs.*',
+                    ],
+                    [
+                        'label' => 'Dokumen Jamaah',
+                        'route' => 'karyawan.documents.index',
+                        'active' => 'karyawan.documents.*',
+                    ],
                 ],
             ],
             [
                 'title' => 'Operasional Travel',
                 'items' => [
-                    ['label' => 'Pembayaran', 'route' => 'karyawan.payments.index',],
-                    ['label' => 'Riwayat Pembayaran','route' => 'karyawan.payments.history',],
-                    ['label' => 'Paket Perjalanan', 'route' => null],
-                    ['label' => 'Persiapan Keberangkatan', 'route' => null],
-                    ['label' => 'Kelompok & Muthawif', 'route' => null],
+                    [
+                        'label' => 'Pembayaran',
+                        'route' => 'karyawan.payments.index',
+                        'active' => 'karyawan.payments.index',
+                    ],
+                    [
+                        'label' => 'Riwayat Pembayaran',
+                        'route' => 'karyawan.payments.history',
+                        'active' => 'karyawan.payments.history',
+                    ],
+                    [
+                        'label' => 'Persiapan Keberangkatan',
+                        'route' => null,
+                    ],
+                    [
+                        'label' => 'Kelompok & Muthawif',
+                        'route' => 'karyawan.groups.index',
+                        'active' => 'karyawan.groups.*',
+                    ],
                 ],
             ],
         ],
@@ -57,15 +106,28 @@
             [
                 'title' => 'Menu Utama',
                 'items' => [
-                    ['label' => 'Dashboard', 'route' => 'muthawif.dashboard', 'active' => 'muthawif.dashboard'],
+                    [
+                        'label' => 'Dashboard',
+                        'route' => 'muthawif.dashboard',
+                        'active' => 'muthawif.dashboard',
+                    ],
                 ],
             ],
             [
                 'title' => 'Aktivitas Perjalanan',
                 'items' => [
-                    ['label' => 'Kelompok Jamaah', 'route' => null],
-                    ['label' => 'Aktivitas Ibadah', 'route' => null],
-                    ['label' => 'Laporan', 'route' => null],
+                    [
+                        'label' => 'Kelompok Jamaah',
+                        'route' => null,
+                    ],
+                    [
+                        'label' => 'Aktivitas Ibadah',
+                        'route' => null,
+                    ],
+                    [
+                        'label' => 'Laporan',
+                        'route' => null,
+                    ],
                 ],
             ],
         ],
@@ -74,16 +136,32 @@
             [
                 'title' => 'Menu Utama',
                 'items' => [
-                    ['label' => 'Dashboard', 'route' => 'jamaah.dashboard', 'active' => 'jamaah.dashboard'],
+                    [
+                        'label' => 'Dashboard',
+                        'route' => 'jamaah.dashboard',
+                        'active' => 'jamaah.dashboard',
+                    ],
                 ],
             ],
             [
                 'title' => 'Layanan Jamaah',
                 'items' => [
-                    ['label' => 'Profil Saya', 'route' => null],
-                    ['label' => 'Dokumen', 'route' => null],
-                    ['label' => 'Pembayaran', 'route' => null],
-                    ['label' => 'Informasi Perjalanan', 'route' => null],
+                    [
+                        'label' => 'Profil Saya',
+                        'route' => null,
+                    ],
+                    [
+                        'label' => 'Dokumen',
+                        'route' => null,
+                    ],
+                    [
+                        'label' => 'Pembayaran',
+                        'route' => null,
+                    ],
+                    [
+                        'label' => 'Informasi Perjalanan',
+                        'route' => null,
+                    ],
                 ],
             ],
         ],
