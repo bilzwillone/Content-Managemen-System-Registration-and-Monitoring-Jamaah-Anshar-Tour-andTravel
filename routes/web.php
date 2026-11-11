@@ -14,6 +14,9 @@ use App\Http\Controllers\Karyawan\JamaahController;
 use App\Http\Controllers\Karyawan\JamaahDocumentController;
 use App\Http\Controllers\Karyawan\PaymentController;
 use App\Http\Controllers\Karyawan\JamaahGroupController;
+use App\Http\Controllers\Karyawan\DepartureChecklistController;
+use App\Http\Controllers\Karyawan\DepartureRoomAssignmentController;
+use App\Http\Controllers\Karyawan\DeparturePreparationController;
 use App\Http\Controllers\PackageController as PublicPackageController;
 use App\Http\Controllers\MidtransWebhookController;
 use App\Models\User;
@@ -186,20 +189,17 @@ Route::middleware(['auth', 'role:karyawan'])
     ->name('karyawan.')
     ->group(function () {
 
-        // DASHBOARD KARYAWAN
         Route::get('/', function () {
             return view('dashboard.karyawan');
         })->name('dashboard');
 
         Route::resource('prospects', ProspectController::class);
 
-        // Riwayat Follow-up
         Route::post(
             '/prospects/{prospect}/follow-ups',
             [ProspectFollowUpController::class, 'store']
         )->name('prospects.follow-ups.store');
 
-        // Konversi Calon Jamaah menjadi Jamaah
         Route::post(
             '/prospects/{prospect}/convert',
             [ProspectController::class, 'convertToJamaah']
@@ -216,6 +216,55 @@ Route::middleware(['auth', 'role:karyawan'])
 
         Route::get('/jamaahs/{jamaah}', [JamaahController::class, 'show'])
             ->name('jamaahs.show');
+     
+        Route::prefix('departures')->name('departures.')->group(function () {
+
+            Route::get('/', [DeparturePreparationController::class, 'index'])
+                ->name('index');
+
+            Route::get('/create', [DeparturePreparationController::class, 'create'])
+                ->name('create');
+
+            Route::post('/', [DeparturePreparationController::class, 'store'])
+                ->name('store');
+
+            Route::get('/{preparation}', [DeparturePreparationController::class, 'show'])
+                ->name('show');
+
+            Route::put('/{preparation}', [DeparturePreparationController::class, 'update'])
+                ->name('update');
+
+            Route::post('/{preparation}/rooms', [
+                DepartureRoomAssignmentController::class,
+                'store'
+            ])->name('rooms.store');
+
+            Route::put('/{preparation}/rooms/{roomAssignment}', [
+                DepartureRoomAssignmentController::class,
+                'update'
+            ])->name('rooms.update');
+
+            Route::delete('/{preparation}/rooms/{roomAssignment}', [
+                DepartureRoomAssignmentController::class,
+                'destroy'
+            ])->name('rooms.destroy');
+
+            Route::post('/{preparation}/checklists', [
+                DepartureChecklistController::class,
+                'store'
+            ])->name('checklists.store');
+
+            Route::put('/{preparation}/checklists/{checklist}', [
+                DepartureChecklistController::class,
+                'update'
+            ])->name('checklists.update');
+
+            Route::delete('/{preparation}/checklists/{checklist}', [
+                DepartureChecklistController::class,
+                'destroy'
+            ])->name('checklists.destroy');
+
+        });
         
         Route::resource('groups', JamaahGroupController::class)
             ->only([

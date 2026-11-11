@@ -91,7 +91,8 @@
                     ],
                     [
                         'label' => 'Persiapan Keberangkatan',
-                        'route' => null,
+                        'route' => 'karyawan.departures.index',
+                        'active' => 'karyawan.departures.*',
                     ],
                     [
                         'label' => 'Kelompok & Muthawif',

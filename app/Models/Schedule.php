@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Schedule extends Model
 {
@@ -95,4 +96,9 @@ class Schedule extends Model
         return $this->hasMany(JamaahGroup::class);
     }
     
+    public function departurePreparation(): HasOne
+    {
+        return $this->hasOne(DeparturePreparation::class);
+    }
+
 }

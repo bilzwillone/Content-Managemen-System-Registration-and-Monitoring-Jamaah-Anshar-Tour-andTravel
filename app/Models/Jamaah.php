@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
+
 class Jamaah extends Model
 {
     protected $fillable = [
@@ -103,6 +104,22 @@ class Jamaah extends Model
     {
         return $this->hasMany(
             JamaahGroupMember::class,
+            'jamaah_id'
+        );
+    }
+
+    public function departureRoomAssignments(): HasMany
+    {
+        return $this->hasMany(
+            DepartureRoomAssignment::class,
+            'jamaah_id'
+        );
+    }
+
+    public function departureChecklists(): HasMany
+    {
+        return $this->hasMany(
+            DepartureChecklist::class,
             'jamaah_id'
         );
     }
