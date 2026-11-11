@@ -44,7 +44,8 @@
             [
                 'title' => 'Operasional Travel',
                 'items' => [
-                    ['label' => 'Pembayaran', 'route' => null],
+                    ['label' => 'Pembayaran', 'route' => 'karyawan.payments.index',],
+                    ['label' => 'Riwayat Pembayaran','route' => 'karyawan.payments.history',],
                     ['label' => 'Paket Perjalanan', 'route' => null],
                     ['label' => 'Persiapan Keberangkatan', 'route' => null],
                     ['label' => 'Kelompok & Muthawif', 'route' => null],
@@ -177,6 +178,6 @@
         </form>
 
     </div>
-
+    
 
 </aside>

@@ -12,7 +12,9 @@ use App\Http\Controllers\Karyawan\ProspectController;
 use App\Http\Controllers\Karyawan\ProspectFollowUpController;
 use App\Http\Controllers\Karyawan\JamaahController;
 use App\Http\Controllers\Karyawan\JamaahDocumentController;
+use App\Http\Controllers\Karyawan\PaymentController;
 use App\Http\Controllers\PackageController as PublicPackageController;
+use App\Http\Controllers\MidtransWebhookController;
 use App\Models\User;
 use App\Models\Page;
 use App\Models\Package;
@@ -234,7 +236,17 @@ Route::middleware(['auth', 'role:karyawan'])
                     ->name('download');
 
             });
+            
+            Route::prefix('payments')->name('payments.')->group(function () {
+                Route::get('/', [PaymentController::class, 'index'])
+                    ->name('index');
 
+                Route::get('/history', [PaymentController::class, 'history'])
+                    ->name('history');
+
+                Route::post('/{jamaah}', [PaymentController::class, 'store'])
+                    ->name('store');
+            });
     });
 
 Route::middleware(['auth', 'role:muthawif'])
@@ -262,6 +274,11 @@ Route::middleware(['auth', 'role:jamaah'])
         })->name('dashboard');
 
     });
+
+Route::post('/midtrans/notification', [
+    MidtransWebhookController::class,
+    'handle'
+])->name('midtrans.notification');
 
 Route::middleware('auth')->group(function () {
 
