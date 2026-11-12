@@ -190,31 +190,6 @@
 
                             </div>
 
-                            {{-- Information --}}
-                            <div class="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
-
-                                <p class="text-sm font-semibold text-gray-800">
-                                    Informasi Pembuatan Kelompok
-                                </p>
-
-                                <ul class="mt-2 list-inside list-disc space-y-1.5 text-xs leading-relaxed text-gray-600">
-
-                                    <li>
-                                        Kode kelompok akan dibuat secara otomatis oleh sistem.
-                                    </li>
-
-                                    <li>
-                                        Status awal kelompok adalah Persiapan.
-                                    </li>
-
-                                    <li>
-                                        Anggota jamaah dan dua Muthawif dapat ditambahkan setelah kelompok dibuat.
-                                    </li>
-
-                                </ul>
-
-                            </div>
-
                         </div>
 
                         {{-- Form Actions --}}

@@ -118,16 +118,19 @@
                 'title' => 'Aktivitas Perjalanan',
                 'items' => [
                     [
-                        'label' => 'Kelompok Jamaah',
-                        'route' => null,
+                        'label' => 'Kelompok & Jadwal',
+                        'route' => 'muthawif.groups.index',
+                        'active' => 'muthawif.groups.*',
                     ],
                     [
                         'label' => 'Aktivitas Ibadah',
-                        'route' => null,
+                        'route' => 'muthawif.activities.index',
+                        'active' => 'muthawif.activities.*',
                     ],
                     [
                         'label' => 'Laporan',
-                        'route' => null,
+                        'route' => 'muthawif.reports.index',
+                        'active' => 'muthawif.reports.*',
                     ],
                 ],
             ],
@@ -203,7 +206,7 @@
 
             @foreach ($group['items'] as $item)
 
-                @if ($item['route'])
+                @if (!empty($item['route']))
                     <a
                         href="{{ route($item['route']) }}"
                         class="{{ request()->routeIs($item['active'] ?? '') ? 'bg-[#FDD52E] font-semibold text-gray-900' : 'text-gray-300 hover:bg-white/10 hover:text-white' }} flex items-center gap-3 rounded-lg px-4 py-3 text-sm transition"

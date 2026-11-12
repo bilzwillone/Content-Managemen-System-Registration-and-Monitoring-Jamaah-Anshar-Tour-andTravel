@@ -17,6 +17,9 @@ use App\Http\Controllers\Karyawan\JamaahGroupController;
 use App\Http\Controllers\Karyawan\DepartureChecklistController;
 use App\Http\Controllers\Karyawan\DepartureRoomAssignmentController;
 use App\Http\Controllers\Karyawan\DeparturePreparationController;
+use App\Http\Controllers\Muthawif\MuthawifController;
+use App\Http\Controllers\Muthawif\MuthawifActivityController;
+use App\Http\Controllers\Muthawif\MuthawifActivityReportController;
 use App\Http\Controllers\PackageController as PublicPackageController;
 use App\Http\Controllers\MidtransWebhookController;
 use App\Models\User;
@@ -85,8 +88,6 @@ Route::middleware(['auth', 'role:admin'])
             return view('admin.dashboard');
         })->name('dashboard');
 
-
-        // MANAJEMEN PENGGUNA
         Route::get('/users', [UserController::class, 'index'])
             ->name('users.index');
 
@@ -105,8 +106,6 @@ Route::middleware(['auth', 'role:admin'])
         Route::delete('/users/{user}', [UserController::class, 'destroy'])
             ->name('users.destroy');
 
-
-        // KELOLA HALAMAN
         Route::get('/pages', [PageController::class, 'index'])
             ->name('pages.index');
 
@@ -125,8 +124,6 @@ Route::middleware(['auth', 'role:admin'])
         Route::delete('/pages/{page}', [PageController::class, 'destroy'])
             ->name('pages.destroy');
 
-
-        // KELOLA SECTION
         Route::get('/pages/{page}/sections', [PageController::class, 'sections'])
             ->name('pages.sections');
 
@@ -151,8 +148,6 @@ Route::middleware(['auth', 'role:admin'])
         Route::patch('/pages/{page}/sections/{section}/order', [PageController::class, 'updateSectionOrder'])
             ->name('pages.sections.order');
 
-
-        // KELOLA PAKET UMROH
         Route::get('/packages', [PackageController::class, 'index'])
             ->name('packages.index');
 
@@ -174,8 +169,6 @@ Route::middleware(['auth', 'role:admin'])
         Route::delete('/packages/{package}', [PackageController::class, 'destroy'])
             ->name('packages.destroy');
 
-
-        // MANAJEMEN JADWAL KEBERANGKATAN
         Route::resource('schedules', ScheduleController::class)
             ->except(['show'])
             ->parameters([
@@ -324,16 +317,55 @@ Route::middleware(['auth', 'role:karyawan'])
             });
     });
 
-Route::middleware(['auth', 'role:muthawif'])
-    ->prefix('muthawif')
+Route::prefix('muthawif')
     ->name('muthawif.')
+    ->middleware(['auth', 'role:muthawif'])
     ->group(function () {
 
-        Route::get('/', function () {
-            return view('dashboard.role', [
-                'title' => 'Dashboard Muthawif Ansar Travel',
-            ]);
-        })->name('dashboard');
+        Route::get('/dashboard', [
+            MuthawifController::class,
+            'dashboard'
+        ])->name('dashboard');
+
+        Route::get('/groups', [
+            MuthawifController::class,
+            'groups'
+        ])->name('groups.index');
+
+        Route::get('/groups/{group}', [
+            MuthawifController::class,
+            'showGroup'
+        ])->name('groups.show');
+
+        Route::get('/activities', [MuthawifActivityController::class, 'index'])
+            ->name('activities.index');
+
+        Route::post('/activities', [MuthawifActivityController::class, 'store'])
+            ->name('activities.store');
+
+        Route::get('/activities/{activity}', [MuthawifActivityController::class, 'show'])
+            ->name('activities.show');
+
+        Route::patch('/activities/{activity}/participants/{participant}', [MuthawifActivityController::class, 'updateParticipant'])
+            ->name('activities.participants.update');
+
+        Route::get('/reports', [MuthawifActivityReportController::class, 'index'])
+            ->name('reports.index');
+
+        Route::get('/reports/activities/{activity}/create', [MuthawifActivityReportController::class, 'create'])
+            ->name('reports.create');
+
+        Route::post('/reports/activities/{activity}', [MuthawifActivityReportController::class, 'store'])
+            ->name('reports.store');
+
+        Route::get('/reports/{report}', [MuthawifActivityReportController::class, 'show'])
+            ->name('reports.show');
+
+        Route::put('/reports/{report}', [MuthawifActivityReportController::class, 'update'])
+            ->name('reports.update');
+
+        Route::patch('/reports/{report}/submit', [MuthawifActivityReportController::class, 'submit'])
+            ->name('reports.submit');
 
     });
 
