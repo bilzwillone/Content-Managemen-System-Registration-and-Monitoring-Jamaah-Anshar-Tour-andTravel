@@ -21,7 +21,6 @@ class ProspectController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
-
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('phone', 'like', "%{$search}%")
@@ -34,7 +33,6 @@ class ProspectController extends Controller
         }
 
         $prospects = $query->paginate(10)->withQueryString();
-
         $totalProspects = Prospect::count();
         $newProspects = Prospect::where('status', 'baru')->count();
         $interestedProspects = Prospect::where('status', 'tertarik')->count();
@@ -60,10 +58,7 @@ class ProspectController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        return view('karyawan.prospects.create', compact(
-            'packages',
-            'employees'
-        ));
+        return view('karyawan.prospects.create', compact('packages', 'employees'));
     }
 
     public function store(Request $request)
@@ -76,19 +71,11 @@ class ProspectController extends Controller
             'package_id' => ['nullable', 'exists:packages,id'],
             'status' => [
                 'required',
-                Rule::in([
-                    'baru',
-                    'dihubungi',
-                    'follow_up',
-                    'tertarik',
-                    'mendaftar',
-                    'tidak_tertarik',
-                ]),
+                Rule::in(['baru', 'dihubungi', 'follow_up', 'tertarik', 'mendaftar', 'tidak_tertarik']),
             ],
             'pic_id' => [
                 'nullable',
-                Rule::exists('users', 'id')
-                    ->where('role', User::ROLE_KARYAWAN),
+                Rule::exists('users', 'id')->where('role', User::ROLE_KARYAWAN),
             ],
             'next_follow_up_at' => ['nullable', 'date'],
             'notes' => ['nullable', 'string'],
@@ -106,12 +93,7 @@ class ProspectController extends Controller
 
     public function show(Prospect $prospect)
     {
-        $prospect->load([
-            'package',
-            'pic',
-            'creator',
-            'followUps.user',
-        ]);
+        $prospect->load(['package', 'pic', 'creator', 'followUps.user']);
 
         return view('karyawan.prospects.show', compact('prospect'));
     }
@@ -127,11 +109,7 @@ class ProspectController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        return view('karyawan.prospects.edit', compact(
-            'prospect',
-            'packages',
-            'employees'
-        ));
+        return view('karyawan.prospects.edit', compact('prospect', 'packages', 'employees'));
     }
 
     public function update(Request $request, Prospect $prospect)
@@ -144,19 +122,11 @@ class ProspectController extends Controller
             'package_id' => ['nullable', 'exists:packages,id'],
             'status' => [
                 'required',
-                Rule::in([
-                    'baru',
-                    'dihubungi',
-                    'follow_up',
-                    'tertarik',
-                    'mendaftar',
-                    'tidak_tertarik',
-                ]),
+                Rule::in(['baru', 'dihubungi', 'follow_up', 'tertarik', 'mendaftar', 'tidak_tertarik']),
             ],
             'pic_id' => [
                 'nullable',
-                Rule::exists('users', 'id')
-                    ->where('role', User::ROLE_KARYAWAN),
+                Rule::exists('users', 'id')->where('role', User::ROLE_KARYAWAN),
             ],
             'next_follow_up_at' => ['nullable', 'date'],
             'notes' => ['nullable', 'string'],
@@ -181,21 +151,14 @@ class ProspectController extends Controller
     public function convertToJamaah(Prospect $prospect)
     {
         if ($prospect->status !== 'mendaftar') {
-            return back()->with(
-                'error',
-                'Calon jamaah harus berstatus Mendaftar untuk dikonversi.'
-            );
+            return back()->with('error', 'Calon jamaah harus berstatus Mendaftar untuk dikonversi.');
         }
 
         if ($prospect->jamaah()->exists()) {
-            return back()->with(
-                'error',
-                'Calon jamaah ini sudah terdaftar sebagai Jamaah.'
-            );
+            return back()->with('error', 'Calon jamaah ini sudah terdaftar sebagai Jamaah.');
         }
 
         DB::transaction(function () use ($prospect) {
-
             $lockedProspect = Prospect::whereKey($prospect->id)
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -208,9 +171,16 @@ class ProspectController extends Controller
                 abort(422, 'Calon jamaah sudah dikonversi sebelumnya.');
             }
 
-            // Membuat data Jamaah.
+            // Ambil harga paket sebagai snapshot tagihan pada saat konversi.
+            $lockedProspect->loadMissing('package');
+            $packagePrice = $lockedProspect->package?->price;
+            $totalBill = $packagePrice !== null && (float) $packagePrice > 0
+                ? (float) $packagePrice
+                : null;
+
             $jamaah = $lockedProspect->jamaah()->create([
                 'package_id' => $lockedProspect->package_id,
+                'total_bill' => $totalBill,
                 'name' => $lockedProspect->name,
                 'phone' => $lockedProspect->phone,
                 'email' => $lockedProspect->email,
@@ -219,16 +189,15 @@ class ProspectController extends Controller
                 'status' => 'terdaftar',
             ]);
 
-            // Membuat nomor registrasi otomatis.
-            $registrationNumber = 'ANS-' .
-                now()->format('Y') . '-' .
-                str_pad($jamaah->id, 6, '0', STR_PAD_LEFT);
+            $registrationNumber = 'ANS-'
+                . now()->format('Y') . '-'
+                . str_pad($jamaah->id, 6, '0', STR_PAD_LEFT);
 
             $jamaah->update([
                 'registration_number' => $registrationNumber,
             ]);
 
-            // Membuat checklist enam dokumen wajib.
+            // Checklist hanya dibuat dengan enam identitas dokumen baku.
             $requiredDocuments = [
                 'ktp' => 'KTP',
                 'kartu_keluarga' => 'Kartu Keluarga (KK)',
@@ -239,20 +208,18 @@ class ProspectController extends Controller
             ];
 
             foreach ($requiredDocuments as $type => $name) {
-                $jamaah->documents()->create([
-                    'document_type' => $type,
-                    'document_name' => $name,
-                    'status' => 'belum_diupload',
-                ]);
+                $jamaah->documents()->firstOrCreate(
+                    ['document_type' => $type],
+                    [
+                        'document_name' => $name,
+                        'status' => 'belum_diupload',
+                    ]
+                );
             }
         });
 
         return redirect()
             ->route('karyawan.prospects.show', $prospect)
-            ->with(
-                'success',
-                'Calon jamaah berhasil dikonversi menjadi data Jamaah.'
-            );
+            ->with('success', 'Calon jamaah berhasil dikonversi menjadi data Jamaah.');
     }
-
 }

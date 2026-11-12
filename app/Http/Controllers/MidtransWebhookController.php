@@ -9,167 +9,101 @@ use Illuminate\Support\Facades\Log;
 
 class MidtransWebhookController extends Controller
 {
-    /**
-     * Menerima dan memproses notifikasi dari Midtrans.
-     */
     public function handle(Request $request)
     {
         $payload = $request->validate([
-            'order_id' => 'required|string',
-            'status_code' => 'required|string',
-            'gross_amount' => 'required|string',
-            'signature_key' => 'required|string',
-            'transaction_status' => 'required|string',
-            'transaction_id' => 'nullable|string',
-            'payment_type' => 'nullable|string',
-            'fraud_status' => 'nullable|string',
+            'order_id' => ['required', 'string', 'max:100'],
+            'status_code' => ['required', 'string'],
+            'gross_amount' => ['required', 'numeric'],
+            'signature_key' => ['required', 'string'],
+            'transaction_status' => ['required', 'string'],
+            'transaction_id' => ['nullable', 'string'],
+            'payment_type' => ['nullable', 'string'],
+            'fraud_status' => ['nullable', 'string'],
+            'currency' => ['nullable', 'string', 'size:3'],
         ]);
 
-        // Gunakan Signature Secret Key untuk verifikasi notifikasi.
-        $signatureKey = config('midtrans.signature_key');
-
-        if (empty($signatureKey)) {
-            Log::error('Midtrans Signature Secret Key belum dikonfigurasi.');
-
-            return response()->json([
-                'message' => 'Signature Secret Key belum dikonfigurasi.',
-            ], 500);
+        $serverKey = config('midtrans.server_key');
+        if (!$serverKey) {
+            Log::error('MIDTRANS_SERVER_KEY belum dikonfigurasi.');
+            return response()->json(['message' => 'Konfigurasi Midtrans belum lengkap.'], 500);
         }
 
-        // Hitung signature berdasarkan data notifikasi.
-        $signatureInput =
-            $payload['order_id'] .
-            $payload['status_code'] .
-            $payload['gross_amount'] .
-            $signatureKey;
-
+        $grossAmountRaw = (string) $request->input('gross_amount');
+        $signatureInput = $payload['order_id'] . $payload['status_code'] . $grossAmountRaw . $serverKey;
         $expectedSignature = hash('sha512', $signatureInput);
 
-        // Verifikasi signature.
-        if (!hash_equals(
-            $expectedSignature,
-            strtolower(trim($payload['signature_key']))
-        )) {
-            Log::warning('Notifikasi Midtrans dengan signature tidak valid.', [
-                'order_id' => $payload['order_id'],
-            ]);
-
-            return response()->json([
-                'message' => 'Signature tidak valid.',
-            ], 403);
+        if (!hash_equals(strtolower($expectedSignature), strtolower(trim($payload['signature_key'])))) {
+            Log::warning('Signature notifikasi Midtrans tidak valid.', ['order_id' => $payload['order_id']]);
+            return response()->json(['message' => 'Signature tidak valid.'], 403);
         }
 
-        // Cari transaksi berdasarkan order ID.
         $payment = Payment::where('order_id', $payload['order_id'])
             ->where('gateway_provider', 'midtrans')
             ->first();
 
         if (!$payment) {
-            return response()->json([
-                'message' => 'Transaksi tidak ditemukan.',
-            ], 404);
+            Log::warning('Order ID notifikasi Midtrans tidak ditemukan.', ['order_id' => $payload['order_id']]);
+            return response()->json(['message' => 'Transaksi tidak ditemukan.'], 404);
         }
 
-        // Pastikan nominal pembayaran sesuai.
-        $expectedAmount = number_format(
-            (float) $payment->amount,
-            2,
-            '.',
-            ''
-        );
-
-        $receivedAmount = number_format(
-            (float) $payload['gross_amount'],
-            2,
-            '.',
-            ''
-        );
-
-        if (
-            $expectedAmount !== $receivedAmount ||
-            ($request->filled('currency') &&
-                $request->input('currency') !== 'IDR')
-        ) {
-            Log::warning('Nominal atau mata uang notifikasi tidak sesuai.', [
+        $expectedAmount = number_format((float) $payment->amount, 2, '.', '');
+        $receivedAmount = number_format((float) $payload['gross_amount'], 2, '.', '');
+        if ($expectedAmount !== $receivedAmount) {
+            Log::warning('Nominal notifikasi Midtrans tidak sesuai.', [
                 'order_id' => $payload['order_id'],
+                'expected' => $expectedAmount,
+                'received' => $receivedAmount,
             ]);
-
-            return response()->json([
-                'message' => 'Nominal atau mata uang tidak sesuai.',
-            ], 422);
+            return response()->json(['message' => 'Nominal tidak sesuai.'], 422);
         }
 
-        // Perbarui status pembayaran secara aman.
+        if (isset($payload['currency']) && strtoupper($payload['currency']) !== 'IDR') {
+            return response()->json(['message' => 'Mata uang tidak sesuai.'], 422);
+        }
+
         DB::transaction(function () use ($payment, $payload) {
-            $lockedPayment = Payment::whereKey($payment->id)
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            $transactionStatus = strtolower(
-                $payload['transaction_status']
-            );
-
-            $fraudStatus = strtolower(
-                $payload['fraud_status'] ?? ''
-            );
+            $locked = Payment::whereKey($payment->id)->lockForUpdate()->firstOrFail();
+            $transactionStatus = strtolower($payload['transaction_status']);
+            $fraudStatus = strtolower($payload['fraud_status'] ?? '');
+            $statusCode = (string) $payload['status_code'];
 
             $newStatus = match ($transactionStatus) {
-                'settlement' => (
-                    $payload['status_code'] === '200'
-                ) ? 'paid' : $lockedPayment->status,
-
-                'capture' => (
-                    $payload['status_code'] === '200' &&
-                    ($fraudStatus === '' || $fraudStatus === 'accept')
-                ) ? 'paid' : (
-                    $fraudStatus === 'deny'
-                        ? 'failed'
-                        : $lockedPayment->status
-                ),
-
+                'settlement' => $statusCode === '200' ? 'paid' : $locked->status,
+                'capture' => match (true) {
+                    $statusCode === '200' && in_array($fraudStatus, ['', 'accept'], true) => 'paid',
+                    $fraudStatus === 'challenge' => 'pending',
+                    $fraudStatus === 'deny' => 'failed',
+                    default => $locked->status,
+                },
                 'pending' => 'pending',
                 'expire' => 'expired',
                 'cancel' => 'cancelled',
-                'deny' => 'failed',
-
-                default => $lockedPayment->status,
+                'deny', 'failure' => 'failed',
+                'refund' => 'refunded',
+                'partial_refund' => 'partially_refunded',
+                default => $locked->status,
             };
 
-            // Status paid tidak boleh turun menjadi status lain.
+            // Abaikan notifikasi lama yang datang terlambat setelah status final diterima.
             if (
-                $lockedPayment->status === 'paid' &&
-                $newStatus !== 'paid'
+                in_array($locked->status, ['paid', 'refunded', 'partially_refunded'], true)
+                && in_array($newStatus, ['pending', 'failed', 'expired', 'cancelled'], true)
             ) {
-                $newStatus = 'paid';
+                $newStatus = $locked->status;
             }
 
-            $updateData = [
+            $update = [
                 'status' => $newStatus,
                 'gateway_response' => $payload,
             ];
+            if (!empty($payload['transaction_id'])) $update['gateway_transaction_id'] = $payload['transaction_id'];
+            if (!empty($payload['payment_type'])) $update['payment_method'] = $payload['payment_type'];
+            if ($newStatus === 'paid' && !$locked->paid_at) $update['paid_at'] = now();
 
-            if (!empty($payload['transaction_id'])) {
-                $updateData['gateway_transaction_id'] =
-                    $payload['transaction_id'];
-            }
-
-            if (!empty($payload['payment_type'])) {
-                $updateData['payment_method'] =
-                    $payload['payment_type'];
-            }
-
-            if (
-                $newStatus === 'paid' &&
-                !$lockedPayment->paid_at
-            ) {
-                $updateData['paid_at'] = now();
-            }
-
-            $lockedPayment->update($updateData);
+            $locked->update($update);
         });
 
-        return response()->json([
-            'message' => 'Notifikasi berhasil diproses.',
-        ], 200);
+        return response()->json(['message' => 'Notifikasi berhasil diproses.'], 200);
     }
 }

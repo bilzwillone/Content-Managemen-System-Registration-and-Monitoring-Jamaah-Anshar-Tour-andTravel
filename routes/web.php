@@ -20,6 +20,8 @@ use App\Http\Controllers\Karyawan\DeparturePreparationController;
 use App\Http\Controllers\Muthawif\MuthawifController;
 use App\Http\Controllers\Muthawif\MuthawifActivityController;
 use App\Http\Controllers\Muthawif\MuthawifActivityReportController;
+use App\Http\Controllers\Jamaah\JamaahPortalController;
+use App\Http\Controllers\Jamaah\JamaahPaymentController;
 use App\Http\Controllers\PackageController as PublicPackageController;
 use App\Http\Controllers\MidtransWebhookController;
 use App\Models\User;
@@ -311,9 +313,10 @@ Route::middleware(['auth', 'role:karyawan'])
 
                 Route::get('/history', [PaymentController::class, 'history'])
                     ->name('history');
+                    
+                Route::post('/{jamaah}/manual', [PaymentController::class, 'storeManual'])
+                    ->name('manual');
 
-                Route::post('/{jamaah}', [PaymentController::class, 'store'])
-                    ->name('store');
             });
     });
 
@@ -369,18 +372,17 @@ Route::prefix('muthawif')
 
     });
 
-Route::middleware(['auth', 'role:jamaah'])
-    ->prefix('jamaah')
-    ->name('jamaah.')
-    ->group(function () {
-
-        Route::get('/', function () {
-            return view('dashboard.role', [
-                'title' => 'Dashboard Jamaah Ansar Travel',
-            ]);
-        })->name('dashboard');
-
-    });
+Route::prefix('jamaah')->name('jamaah.')->middleware(['auth', 'verified', 'role:jamaah'])->group(function () {
+    Route::get('/dashboard', [JamaahPortalController::class, 'dashboard'])->name('dashboard');
+    Route::get('/profile', [JamaahPortalController::class, 'profile'])->name('profile');
+    Route::put('/profile', [JamaahPortalController::class, 'updateProfile'])->name('profile.update');
+    Route::get('/documents', [JamaahPortalController::class, 'documents'])->name('documents');
+    Route::post('/documents/{document}/upload', [JamaahPortalController::class, 'uploadDocument'])->name('documents.upload');
+    Route::get('/payments', [JamaahPortalController::class, 'payments'])->name('payments');
+    Route::get('/travel', [JamaahPortalController::class, 'travel'])->name('travel');
+    Route::post('/payments', [JamaahPaymentController::class, 'store'])->name('payments.store');
+    
+});
 
 Route::post('/midtrans/notification', [
     MidtransWebhookController::class,

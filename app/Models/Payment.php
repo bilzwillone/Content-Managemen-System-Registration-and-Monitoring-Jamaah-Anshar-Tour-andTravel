@@ -8,22 +8,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Payment extends Model
 {
     protected $fillable = [
-        'jamaah_id',
-        'order_id',
-        'payment_type',
-        'amount',
-        'currency',
-        'gateway_provider',
-        'gateway_transaction_id',
-        'payment_method',
-        'payment_url',
-        'status',
-        'due_date',
-        'expires_at',
-        'paid_at',
-        'notes',
-        'gateway_response',
-        'created_by',
+        'jamaah_id', 'order_id', 'payment_type', 'source', 'amount', 'currency',
+        'gateway_provider', 'gateway_transaction_id', 'payment_method', 'payment_url',
+        'status', 'due_date', 'expires_at', 'paid_at', 'notes', 'gateway_response', 'created_by',
     ];
 
     protected function casts(): array

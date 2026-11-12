@@ -152,19 +152,23 @@
                 'items' => [
                     [
                         'label' => 'Profil Saya',
-                        'route' => null,
+                        'route' => 'jamaah.profile',
+                        'active' => 'jamaah.profile*',
                     ],
                     [
                         'label' => 'Dokumen',
-                        'route' => null,
+                        'route' => 'jamaah.documents',
+                        'active' => 'jamaah.documents*',
                     ],
                     [
                         'label' => 'Pembayaran',
-                        'route' => null,
+                        'route' => 'jamaah.payments',
+                        'active' => 'jamaah.payments*',
                     ],
                     [
                         'label' => 'Informasi Perjalanan',
-                        'route' => null,
+                        'route' => 'jamaah.travel',
+                        'active' => 'jamaah.travel*',
                     ],
                 ],
             ],

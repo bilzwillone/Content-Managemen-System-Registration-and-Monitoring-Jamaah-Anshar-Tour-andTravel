@@ -64,7 +64,6 @@ class JamaahDocumentController extends Controller
 
     public function show(Jamaah $jamaah)
     {
-        // Membuat checklist enam dokumen jika belum tersedia.
         foreach (self::REQUIRED_DOCUMENTS as $type => $name) {
             JamaahDocument::firstOrCreate(
                 [

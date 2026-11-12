@@ -5,25 +5,27 @@ namespace App\Http\Controllers\Karyawan;
 use App\Http\Controllers\Controller;
 use App\Models\Jamaah;
 use App\Models\Payment;
-use App\Services\MidtransService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Throwable;
+use Illuminate\Validation\ValidationException;
 
 class PaymentController extends Controller
 {
-    /**
-     * Menampilkan daftar jamaah dan ringkasan pembayarannya.
-     */
+    /** Menampilkan tagihan dan ringkasan pembayaran setiap jamaah. */
     public function index()
     {
         $jamaahs = Jamaah::with('package')
             ->withSum([
                 'payments as total_paid' => function ($query) {
                     $query->where('status', 'paid');
-                }
+                },
             ], 'amount')
+            ->withCount([
+                'payments as pending_payments_count' => function ($query) {
+                    $query->where('status', 'pending');
+                },
+            ])
             ->orderBy('name')
             ->paginate(15);
 
@@ -31,130 +33,83 @@ class PaymentController extends Controller
     }
 
     /**
-     * Membuat transaksi pembayaran melalui Midtrans Snap.
+     * Mencatat pembayaran langsung yang benar-benar telah diterima Karyawan.
+     * Pembayaran online dibuat sendiri oleh Jamaah melalui portal Jamaah.
      */
-    public function store(
-        Request $request,
-        Jamaah $jamaah,
-        MidtransService $midtrans
-    ) {
+    public function storeManual(Request $request, Jamaah $jamaah)
+    {
         $validated = $request->validate([
-            'amount' => 'required|integer|min:1',
-            'payment_type' => 'required|in:dp,cicilan,pelunasan',
-            'notes' => 'nullable|string|max:1000',
+            'amount' => ['required', 'integer', 'min:1'],
+            'payment_type' => ['required', 'in:dp,cicilan,pelunasan'],
+            'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        if (!$jamaah->total_bill || $jamaah->total_bill <= 0) {
-            return back()->withErrors([
-                'amount' => 'Total tagihan jamaah belum ditentukan.',
-            ]);
-        }
+        DB::transaction(function () use ($jamaah, $validated) {
+            $lockedJamaah = Jamaah::with('package')
+                ->whereKey($jamaah->id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        $totalPaid = (int) $jamaah->payments()
-            ->where('status', 'paid')
-            ->sum('amount');
+            $bill = $this->resolveAndRememberBill($lockedJamaah);
 
-        $remainingAmount = (int) $jamaah->total_bill - $totalPaid;
-
-        if ($remainingAmount <= 0) {
-            return back()->withErrors([
-                'amount' => 'Tagihan jamaah sudah lunas.',
-            ]);
-        }
-
-        if ($validated['amount'] > $remainingAmount) {
-            return back()->withErrors([
-                'amount' => 'Nominal pembayaran melebihi sisa tagihan sebesar Rp'
-                    . number_format($remainingAmount, 0, ',', '.') . '.',
-            ]);
-        }
-
-        // Cegah pembuatan transaksi baru ketika masih ada transaksi pending.
-        $hasPendingPayment = $jamaah->payments()
-            ->where('status', 'pending')
-            ->exists();
-
-        if ($hasPendingPayment) {
-            return back()->withErrors([
-                'amount' => 'Masih terdapat transaksi pembayaran yang menunggu penyelesaian.',
-            ]);
-        }
-
-        $orderId = 'ANS-' . $jamaah->id . '-'
-            . now()->format('YmdHis') . '-'
-            . Str::upper(Str::random(5));
-
-        $payment = Payment::create([
-            'jamaah_id' => $jamaah->id,
-            'order_id' => $orderId,
-            'payment_type' => $validated['payment_type'],
-            'amount' => $validated['amount'],
-            'currency' => 'IDR',
-            'gateway_provider' => 'midtrans',
-            'status' => 'pending',
-            'notes' => $validated['notes'] ?? null,
-            'created_by' => auth()->id(),
-        ]);
-
-        try {
-            $customerDetails = [
-                'first_name' => $jamaah->name,
-            ];
-
-            if ($jamaah->email) {
-                $customerDetails['email'] = $jamaah->email;
+            if ($bill === null) {
+                throw ValidationException::withMessages([
+                    'amount' => 'Tagihan jamaah belum ditentukan. Tetapkan paket atau total tagihan terlebih dahulu.',
+                ]);
             }
 
-            if ($jamaah->phone) {
-                $customerDetails['phone'] = $jamaah->phone;
+            $paid = (int) $lockedJamaah->payments()
+                ->where('status', 'paid')
+                ->sum('amount');
+
+            $remaining = max($bill - $paid, 0);
+
+            if ($remaining <= 0) {
+                throw ValidationException::withMessages([
+                    'amount' => 'Tagihan jamaah sudah lunas.',
+                ]);
             }
 
-            $params = [
-                'transaction_details' => [
-                    'order_id' => $payment->order_id,
-                    'gross_amount' => (int) $payment->amount,
-                ],
-                'customer_details' => $customerDetails,
-                'item_details' => [
-                    [
-                        'id' => 'PAY-' . $payment->id,
-                        'price' => (int) $payment->amount,
-                        'quantity' => 1,
-                        'name' => Str::limit(
-                            'Pembayaran ' . $validated['payment_type']
-                                . ' - ' . $jamaah->name,
-                            50,
-                            ''
-                        ),
-                    ],
-                ],
-            ];
+            if ((int) $validated['amount'] > $remaining) {
+                throw ValidationException::withMessages([
+                    'amount' => 'Nominal pembayaran melebihi sisa tagihan Rp'
+                        . number_format($remaining, 0, ',', '.') . '.',
+                ]);
+            }
 
-            $paymentUrl = $midtrans->createRedirectUrl($params);
+            // Hindari pencatatan tunai ganda ketika pembayaran online masih pending.
+            if ($lockedJamaah->payments()->where('status', 'pending')->exists()) {
+                throw ValidationException::withMessages([
+                    'amount' => 'Masih ada transaksi online yang menunggu konfirmasi. Pastikan transaksi tersebut selesai atau kedaluwarsa sebelum mencatat pembayaran langsung.',
+                ]);
+            }
 
-            $payment->update([
-                'payment_url' => $paymentUrl,
+            Payment::create([
+                'jamaah_id' => $lockedJamaah->id,
+                'order_id' => 'CASH-' . $lockedJamaah->id . '-'
+                    . now()->format('YmdHis') . '-' . Str::upper(Str::random(6)),
+                'payment_type' => $validated['payment_type'],
+                'source' => 'karyawan',
+                'amount' => $validated['amount'],
+                'currency' => 'IDR',
+                'gateway_provider' => null,
+                'gateway_transaction_id' => null,
+                'payment_method' => 'cash',
+                'payment_url' => null,
+                'status' => 'paid',
+                'paid_at' => now(),
+                'notes' => $validated['notes'] ?? 'Pembayaran tunai diterima langsung oleh Karyawan.',
+                'gateway_response' => null,
+                'created_by' => auth()->id(),
             ]);
+        });
 
-            return redirect()->away($paymentUrl);
-
-        } catch (Throwable $exception) {
-            Log::error('Gagal membuat transaksi Midtrans.', [
-                'payment_id' => $payment->id,
-                'order_id' => $payment->order_id,
-                'error' => $exception->getMessage(),
-            ]);
-
-            $payment->update([
-                'status' => 'failed',
-            ]);
-
-            return back()->withErrors([
-                'amount' => 'Transaksi belum berhasil dibuat. Silakan coba kembali.',
-            ]);
-        }
+        return redirect()
+            ->route('karyawan.payments.index')
+            ->with('success', 'Pembayaran langsung berhasil dicatat. Riwayat pembayaran Jamaah telah diperbarui.');
     }
 
+    /** Menampilkan riwayat seluruh transaksi, baik dari Jamaah maupun Karyawan. */
     public function history()
     {
         $payments = Payment::with(['jamaah', 'creator'])
@@ -163,22 +118,36 @@ class PaymentController extends Controller
 
         $summary = [
             'total_transactions' => Payment::count(),
-
-            'paid_transactions' => Payment::where('status', 'paid')
-                ->count(),
-
-            'pending_transactions' => Payment::where('status', 'pending')
-                ->count(),
-
-            'total_paid' => Payment::where('status', 'paid')
-                ->sum('amount'),
+            'paid_transactions' => Payment::where('status', 'paid')->count(),
+            'pending_transactions' => Payment::where('status', 'pending')->count(),
+            'total_paid' => Payment::where('status', 'paid')->sum('amount'),
         ];
 
-        return view('karyawan.payments.history', compact(
-            'payments',
-            'summary'
-        ));
+        return view('karyawan.payments.history', compact('payments', 'summary'));
     }
 
+    /** Menentukan tagihan dari snapshot; fallback ke harga paket hanya bila belum disimpan. */
+    private function resolveAndRememberBill(Jamaah $jamaah): ?int
+    {
+        $storedBill = $jamaah->total_bill !== null
+            ? (int) $jamaah->total_bill
+            : 0;
 
+        if ($storedBill > 0) {
+            return $storedBill;
+        }
+
+        $packagePrice = $jamaah->package?->price !== null
+            ? (int) $jamaah->package->price
+            : 0;
+
+        if ($packagePrice <= 0) {
+            return null;
+        }
+
+        $jamaah->total_bill = $packagePrice;
+        $jamaah->save();
+
+        return $packagePrice;
+    }
 }
