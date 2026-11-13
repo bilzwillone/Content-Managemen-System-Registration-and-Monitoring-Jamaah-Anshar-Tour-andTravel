@@ -23,19 +23,60 @@ class MidtransWebhookController extends Controller
             'currency' => ['nullable', 'string', 'size:3'],
         ]);
 
-        $serverKey = config('midtrans.server_key');
-        if (!$serverKey) {
-            Log::error('MIDTRANS_SERVER_KEY belum dikonfigurasi.');
-            return response()->json(['message' => 'Konfigurasi Midtrans belum lengkap.'], 500);
+        $signatureKey = config('midtrans.signature_key');
+
+        if (empty($signatureKey)) {
+            Log::error('MIDTRANS_SIGNATURE_KEY belum dikonfigurasi.');
+
+            return response()->json([
+                'message' => 'Konfigurasi Midtrans belum lengkap.'
+            ], 500);
         }
 
         $grossAmountRaw = (string) $request->input('gross_amount');
-        $signatureInput = $payload['order_id'] . $payload['status_code'] . $grossAmountRaw . $serverKey;
+
+        $signatureInput =
+            $payload['order_id'] .
+            $payload['status_code'] .
+            $grossAmountRaw .
+            $signatureKey;
+
         $expectedSignature = hash('sha512', $signatureInput);
 
-        if (!hash_equals(strtolower($expectedSignature), strtolower(trim($payload['signature_key'])))) {
-            Log::warning('Signature notifikasi Midtrans tidak valid.', ['order_id' => $payload['order_id']]);
-            return response()->json(['message' => 'Signature tidak valid.'], 403);
+        $receivedSignature = strtolower(
+            trim($payload['signature_key'])
+        );
+
+        $expectedSignature = strtolower($expectedSignature);
+
+        $signatureValid = hash_equals(
+            $expectedSignature,
+            $receivedSignature
+        );
+
+        Log::info('MIDTRANS SIGNATURE DIAGNOSTIC', [
+            'order_id' => $payload['order_id'],
+            'status_code' => $payload['status_code'],
+            'gross_amount' => $grossAmountRaw,
+            'gross_amount_type' => gettype(
+                $request->input('gross_amount')
+            ),
+            'gross_amount_length' => strlen($grossAmountRaw),
+            'signature_key_length' => strlen($signatureKey),
+            'received_signature_length' => strlen(
+                $receivedSignature
+            ),
+            'signature_valid' => $signatureValid,
+        ]);
+
+        if (!$signatureValid) {
+            Log::warning('Signature notifikasi Midtrans tidak valid.', [
+                'order_id' => $payload['order_id'],
+            ]);
+
+            return response()->json([
+                'message' => 'Signature tidak valid.'
+            ], 403);
         }
 
         $payment = Payment::where('order_id', $payload['order_id'])
@@ -43,67 +84,149 @@ class MidtransWebhookController extends Controller
             ->first();
 
         if (!$payment) {
-            Log::warning('Order ID notifikasi Midtrans tidak ditemukan.', ['order_id' => $payload['order_id']]);
-            return response()->json(['message' => 'Transaksi tidak ditemukan.'], 404);
+            Log::warning('Transaksi Midtrans tidak ditemukan.', [
+                'order_id' => $payload['order_id'],
+            ]);
+
+            return response()->json([
+                'message' => 'Transaksi tidak ditemukan.'
+            ], 404);
         }
 
-        $expectedAmount = number_format((float) $payment->amount, 2, '.', '');
-        $receivedAmount = number_format((float) $payload['gross_amount'], 2, '.', '');
+        $expectedAmount = number_format(
+            (float) $payment->amount,
+            2,
+            '.',
+            ''
+        );
+
+        $receivedAmount = number_format(
+            (float) $payload['gross_amount'],
+            2,
+            '.',
+            ''
+        );
+
         if ($expectedAmount !== $receivedAmount) {
-            Log::warning('Nominal notifikasi Midtrans tidak sesuai.', [
+            Log::warning('Nominal pembayaran Midtrans tidak sesuai.', [
                 'order_id' => $payload['order_id'],
                 'expected' => $expectedAmount,
                 'received' => $receivedAmount,
             ]);
-            return response()->json(['message' => 'Nominal tidak sesuai.'], 422);
+
+            return response()->json([
+                'message' => 'Nominal pembayaran tidak sesuai.'
+            ], 422);
         }
 
-        if (isset($payload['currency']) && strtoupper($payload['currency']) !== 'IDR') {
-            return response()->json(['message' => 'Mata uang tidak sesuai.'], 422);
+        if (
+            isset($payload['currency']) &&
+            strtoupper($payload['currency']) !== 'IDR'
+        ) {
+            return response()->json([
+                'message' => 'Mata uang tidak sesuai.'
+            ], 422);
         }
 
         DB::transaction(function () use ($payment, $payload) {
-            $locked = Payment::whereKey($payment->id)->lockForUpdate()->firstOrFail();
-            $transactionStatus = strtolower($payload['transaction_status']);
-            $fraudStatus = strtolower($payload['fraud_status'] ?? '');
+
+            $locked = Payment::whereKey($payment->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $transactionStatus = strtolower(
+                $payload['transaction_status']
+            );
+
+            $fraudStatus = strtolower(
+                $payload['fraud_status'] ?? ''
+            );
+
             $statusCode = (string) $payload['status_code'];
 
+            $currentStatus = $locked->status;
+
+            $fraudAccepted = in_array(
+                $fraudStatus,
+                ['', 'accept'],
+                true
+            );
+
             $newStatus = match ($transactionStatus) {
-                'settlement' => $statusCode === '200' ? 'paid' : $locked->status,
-                'capture' => match (true) {
-                    $statusCode === '200' && in_array($fraudStatus, ['', 'accept'], true) => 'paid',
-                    $fraudStatus === 'challenge' => 'pending',
-                    $fraudStatus === 'deny' => 'failed',
-                    default => $locked->status,
-                },
+
+                'settlement', 'capture' =>
+                    $statusCode === '200' && $fraudAccepted
+                        ? 'paid'
+                        : $currentStatus,
+
                 'pending' => 'pending',
+
                 'expire' => 'expired',
+
                 'cancel' => 'cancelled',
+
                 'deny', 'failure' => 'failed',
+
                 'refund' => 'refunded',
+
                 'partial_refund' => 'partially_refunded',
-                default => $locked->status,
+
+                default => $currentStatus,
             };
 
-            // Abaikan notifikasi lama yang datang terlambat setelah status final diterima.
             if (
-                in_array($locked->status, ['paid', 'refunded', 'partially_refunded'], true)
-                && in_array($newStatus, ['pending', 'failed', 'expired', 'cancelled'], true)
+                in_array($currentStatus, [
+                    'paid',
+                    'refunded',
+                    'partially_refunded',
+                ], true)
+                &&
+                in_array($newStatus, [
+                    'pending',
+                    'failed',
+                    'expired',
+                    'cancelled',
+                ], true)
             ) {
-                $newStatus = $locked->status;
+                $newStatus = $currentStatus;
             }
 
             $update = [
                 'status' => $newStatus,
                 'gateway_response' => $payload,
             ];
-            if (!empty($payload['transaction_id'])) $update['gateway_transaction_id'] = $payload['transaction_id'];
-            if (!empty($payload['payment_type'])) $update['payment_method'] = $payload['payment_type'];
-            if ($newStatus === 'paid' && !$locked->paid_at) $update['paid_at'] = now();
+
+            if (!empty($payload['transaction_id'])) {
+                $update['gateway_transaction_id'] =
+                    $payload['transaction_id'];
+            }
+
+            if (!empty($payload['payment_type'])) {
+                $update['payment_method'] =
+                    $payload['payment_type'];
+            }
+
+            if (
+                $newStatus === 'paid' &&
+                !$locked->paid_at
+            ) {
+                $update['paid_at'] = now();
+            }
 
             $locked->update($update);
+
+            Log::info('Notifikasi Midtrans berhasil diproses.', [
+                'payment_id' => $locked->id,
+                'order_id' => $locked->order_id,
+                'old_status' => $currentStatus,
+                'new_status' => $newStatus,
+                'transaction_status' => $transactionStatus,
+                'amount' => $locked->amount,
+            ]);
         });
 
-        return response()->json(['message' => 'Notifikasi berhasil diproses.'], 200);
+        return response()->json([
+            'message' => 'Notifikasi berhasil diproses.'
+        ], 200);
     }
 }
