@@ -10,24 +10,38 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('jamaahs', function (Blueprint $table) {
-            $table->decimal('total_bill', 15, 2)
-                ->nullable()
-                ->after('package_id');
-        });
+        // Buat kolom hanya jika belum tersedia
+        if (!Schema::hasColumn('jamaahs', 'total_bill')) {
+            Schema::table('jamaahs', function (Blueprint $table) {
+                $table->decimal('total_bill', 15, 2)->nullable();
+            });
+        }
 
-        DB::table('jamaahs')
-            ->join('packages', 'jamaahs.package_id', '=', 'packages.id')
-            ->whereNull('jamaahs.total_bill')
-            ->update([
-                'jamaahs.total_bill' => DB::raw('packages.price'),
-            ]);
+        // Isi total tagihan berdasarkan harga paket
+        $jamaahs = DB::table('jamaahs')
+            ->whereNull('total_bill')
+            ->whereNotNull('package_id')
+            ->get(['id', 'package_id']);
+
+        foreach ($jamaahs as $jamaah) {
+            $price = DB::table('packages')
+                ->where('id', $jamaah->package_id)
+                ->value('price');
+
+            DB::table('jamaahs')
+                ->where('id', $jamaah->id)
+                ->update([
+                    'total_bill' => $price
+                ]);
+        }
     }
 
     public function down(): void
     {
-        Schema::table('jamaahs', function (Blueprint $table) {
-            $table->dropColumn('total_bill');
-        });
+        if (Schema::hasColumn('jamaahs', 'total_bill')) {
+            Schema::table('jamaahs', function (Blueprint $table) {
+                $table->dropColumn('total_bill');
+            });
+        }
     }
 };
