@@ -62,7 +62,6 @@ Route::get('/paket-umroh', function () {
 Route::get('/paket-umroh/{slug}', [PublicPackageController::class, 'show'])
     ->name('packages.show');
 
-
 Route::get('/jadwal', [PublicScheduleController::class, 'index'])
     ->name('schedules.public');
 
@@ -210,7 +209,7 @@ Route::middleware(['auth', 'role:karyawan'])
 
         Route::get('/jamaahs/{jamaah}', [JamaahController::class, 'show'])
             ->name('jamaahs.show');
-     
+
         Route::prefix('departures')->name('departures.')->group(function () {
 
             Route::get('/', [DeparturePreparationController::class, 'index'])
@@ -243,23 +242,32 @@ Route::middleware(['auth', 'role:karyawan'])
                 'destroy'
             ])->name('rooms.destroy');
 
+            // Generate checklist standar
+            Route::post('/{preparation}/checklists/generate', [
+                DepartureChecklistController::class,
+                'generateStandardChecklists'
+            ])->name('checklists.generate');
+
+            // Tambah checklist
             Route::post('/{preparation}/checklists', [
                 DepartureChecklistController::class,
                 'store'
             ])->name('checklists.store');
 
+            // Edit checklist
             Route::put('/{preparation}/checklists/{checklist}', [
                 DepartureChecklistController::class,
                 'update'
             ])->name('checklists.update');
 
+            // Hapus checklist
             Route::delete('/{preparation}/checklists/{checklist}', [
                 DepartureChecklistController::class,
                 'destroy'
             ])->name('checklists.destroy');
 
         });
-        
+
         Route::resource('groups', JamaahGroupController::class)
             ->only([
                 'index',
@@ -306,17 +314,19 @@ Route::middleware(['auth', 'role:karyawan'])
 
             });
 
-            Route::prefix('payments')->name('payments.')->group(function () {
-                Route::get('/', [PaymentController::class, 'index'])
-                    ->name('index');
+        Route::prefix('payments')->name('payments.')->group(function () {
 
-                Route::get('/history', [PaymentController::class, 'history'])
-                    ->name('history');
-                    
-                Route::post('/{jamaah}/manual', [PaymentController::class, 'storeManual'])
-                    ->name('manual');
+            Route::get('/', [PaymentController::class, 'index'])
+                ->name('index');
 
-            });
+            Route::get('/history', [PaymentController::class, 'history'])
+                ->name('history');
+
+            Route::post('/{jamaah}/manual', [PaymentController::class, 'storeManual'])
+                ->name('manual');
+
+        });
+
     });
 
 Route::prefix('muthawif')
@@ -372,15 +382,31 @@ Route::prefix('muthawif')
     });
 
 Route::prefix('jamaah')->name('jamaah.')->middleware(['auth', 'verified', 'role:jamaah'])->group(function () {
-    Route::get('/dashboard', [JamaahPortalController::class, 'dashboard'])->name('dashboard');
-    Route::get('/profile', [JamaahPortalController::class, 'profile'])->name('profile');
-    Route::put('/profile', [JamaahPortalController::class, 'updateProfile'])->name('profile.update');
-    Route::get('/documents', [JamaahPortalController::class, 'documents'])->name('documents');
-    Route::post('/documents/{document}/upload', [JamaahPortalController::class, 'uploadDocument'])->name('documents.upload');
-    Route::get('/payments', [JamaahPortalController::class, 'payments'])->name('payments');
-    Route::get('/travel', [JamaahPortalController::class, 'travel'])->name('travel');
-    Route::post('/payments', [JamaahPaymentController::class, 'store'])->name('payments.store');
-    
+
+    Route::get('/dashboard', [JamaahPortalController::class, 'dashboard'])
+        ->name('dashboard');
+
+    Route::get('/profile', [JamaahPortalController::class, 'profile'])
+        ->name('profile');
+
+    Route::put('/profile', [JamaahPortalController::class, 'updateProfile'])
+        ->name('profile.update');
+
+    Route::get('/documents', [JamaahPortalController::class, 'documents'])
+        ->name('documents');
+
+    Route::post('/documents/{document}/upload', [JamaahPortalController::class, 'uploadDocument'])
+        ->name('documents.upload');
+
+    Route::get('/payments', [JamaahPortalController::class, 'payments'])
+        ->name('payments');
+
+    Route::get('/travel', [JamaahPortalController::class, 'travel'])
+        ->name('travel');
+
+    Route::post('/payments', [JamaahPaymentController::class, 'store'])
+        ->name('payments.store');
+
 });
 
 Route::post('/midtrans/notification', [
