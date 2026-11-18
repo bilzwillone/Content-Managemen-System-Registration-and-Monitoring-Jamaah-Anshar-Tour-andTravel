@@ -1165,23 +1165,221 @@
         'proses' => 'bg-orange-50 text-orange-700',
         'selesai' => 'bg-green-50 text-green-700',
     ];
+        // Menghitung ringkasan seluruh checklist.
+    $totalItems = $preparation->checklists->count();
+
+    $completedItems = $preparation->checklists
+        ->where('status', 'selesai')
+        ->count();
+
+    $unfinishedItems = $totalItems - $completedItems;
+
+    $overallProgress = $totalItems > 0
+        ? (int) round(($completedItems / $totalItems) * 100)
+        : 0;
+
+    // Menghitung progres masing-masing jamaah.
+    $jamaahChecklistProgress = $manifestJamaahs->map(function ($jamaah) use ($preparation) {
+        $items = $preparation->checklists
+            ->where('jamaah_id', $jamaah->id);
+
+        $total = $items->count();
+
+        $completed = $items
+            ->where('status', 'selesai')
+            ->count();
+
+        $requiredUnfinished = $items
+            ->filter(fn ($item) => $item->is_required && $item->status !== 'selesai')
+            ->count();
+
+        return [
+            'jamaah' => $jamaah,
+            'total' => $total,
+            'completed' => $completed,
+            'progress' => $total > 0
+                ? (int) round(($completed / $total) * 100)
+                : 0,
+            'required_unfinished' => $requiredUnfinished,
+        ];
+    });
 @endphp
 
 <div class="mb-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
 
-    {{-- Header --}}
-    <div class="border-b border-gray-200 px-6 py-5">
+        {{-- Header --}}
+    <div class="flex flex-col gap-4 border-b border-gray-200 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
 
-        <h2 class="font-semibold text-gray-800">
-            Checklist Kesiapan Jamaah
-        </h2>
+        <div>
+            <h2 class="font-semibold text-gray-800">
+                Checklist Kesiapan Jamaah
+            </h2>
 
-        <p class="mt-1 text-sm text-gray-500">
-            Tambahkan dan pantau item pemeriksaan kesiapan setiap jamaah.
-        </p>
+            <p class="mt-1 text-sm text-gray-500">
+                Tambahkan dan pantau item pemeriksaan kesiapan setiap jamaah.
+            </p>
+        </div>
+
+        @if ($manifestJamaahs->isNotEmpty())
+            <form
+                action="{{ route('karyawan.departures.checklists.generate', $preparation) }}"
+                method="POST"
+                onsubmit="return confirm('Generate checklist standar untuk seluruh jamaah? Checklist yang sudah ada tidak akan dibuat ulang.');"
+            >
+                @csrf
+
+                <button
+                    type="submit"
+                    class="inline-flex items-center justify-center rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700"
+                >
+                    Generate Checklist Standar
+                </button>
+            </form>
+        @endif
 
     </div>
+         {{-- Overall Checklist Progress --}}
+    <div class="border-b border-gray-200 bg-white p-6">
 
+        <h3 class="mb-4 font-semibold text-gray-800">
+            Ringkasan Kesiapan Keberangkatan
+        </h3>
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
+            <div class="rounded-xl bg-gray-50 p-4">
+                <p class="text-sm text-gray-500">Total Checklist</p>
+                <p class="mt-2 text-2xl font-bold text-gray-800">
+                    {{ $totalItems }}
+                </p>
+            </div>
+
+            <div class="rounded-xl bg-green-50 p-4">
+                <p class="text-sm text-green-700">Sudah Selesai</p>
+                <p class="mt-2 text-2xl font-bold text-green-700">
+                    {{ $completedItems }}
+                </p>
+            </div>
+
+            <div class="rounded-xl bg-orange-50 p-4">
+                <p class="text-sm text-orange-700">Belum Selesai</p>
+                <p class="mt-2 text-2xl font-bold text-orange-700">
+                    {{ $unfinishedItems }}
+                </p>
+            </div>
+
+            <div class="rounded-xl bg-blue-50 p-4">
+                <p class="text-sm text-blue-700">Progres Keseluruhan</p>
+                <p class="mt-2 text-2xl font-bold text-blue-700">
+                    {{ $overallProgress }}%
+                </p>
+            </div>
+
+        </div>
+
+        <div class="mt-5">
+            <div class="mb-2 flex justify-between text-sm">
+                <span class="font-medium text-gray-600">
+                    Persentase Kesiapan
+                </span>
+                <span class="font-semibold text-gray-800">
+                    {{ $overallProgress }}%
+                </span>
+            </div>
+
+            <div class="h-3 overflow-hidden rounded-full bg-gray-200">
+                <div
+                    class="h-full rounded-full bg-green-500 transition-all duration-500"
+                    style="width: {{ $overallProgress }}%"
+                ></div>
+            </div>
+        </div>
+
+    </div>
+        {{-- Progress Per Jamaah --}}
+    <div class="border-b border-gray-200 p-6">
+
+        <h3 class="mb-1 font-semibold text-gray-800">
+            Progres Checklist Per Jamaah
+        </h3>
+
+        <p class="mb-4 text-sm text-gray-500">
+            Pantau jumlah checklist selesai dan item wajib yang masih belum dipenuhi.
+        </p>
+
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-[700px] text-left text-sm">
+
+                <thead class="bg-gray-50 text-xs uppercase text-gray-500">
+                    <tr>
+                        <th class="px-4 py-3">No.</th>
+                        <th class="px-4 py-3">Nama Jamaah</th>
+                        <th class="px-4 py-3">Checklist Selesai</th>
+                        <th class="px-4 py-3">Progres</th>
+                        <th class="px-4 py-3">Item Wajib Belum Selesai</th>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y divide-gray-100">
+
+                    @forelse ($jamaahChecklistProgress as $index => $progress)
+
+                        <tr>
+                            <td class="px-4 py-4 text-gray-500">
+                                {{ $index + 1 }}
+                            </td>
+
+                            <td class="px-4 py-4 font-medium text-gray-800">
+                                {{ $progress['jamaah']->name }}
+                            </td>
+
+                            <td class="px-4 py-4 text-gray-600">
+                                {{ $progress['completed'] }} / {{ $progress['total'] }} item
+                            </td>
+
+                            <td class="px-4 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="h-2 w-24 overflow-hidden rounded-full bg-gray-200">
+                                        <div
+                                            class="h-full rounded-full bg-green-500"
+                                            style="width: {{ $progress['progress'] }}%"
+                                        ></div>
+                                    </div>
+
+                                    <span class="text-xs font-semibold text-gray-700">
+                                        {{ $progress['progress'] }}%
+                                    </span>
+                                </div>
+                            </td>
+
+                            <td class="px-4 py-4">
+                                @if ($progress['required_unfinished'] > 0)
+                                    <span class="font-semibold text-red-600">
+                                        {{ $progress['required_unfinished'] }} item
+                                    </span>
+                                @else
+                                    <span class="font-medium text-green-600">
+                                        Tidak ada
+                                    </span>
+                                @endif
+                            </td>
+                        </tr>
+
+                    @empty
+
+                        <tr>
+                            <td colspan="5" class="px-4 py-8 text-center text-gray-400">
+                                Belum ada jamaah pada jadwal keberangkatan ini.
+                            </td>
+                        </tr>
+
+                    @endforelse
+
+                </tbody>
+            </table>
+        </div>
+
+    </div>
     {{-- Add Checklist Form --}}
     <div class="border-b border-gray-100 bg-gray-50 p-6">
 
